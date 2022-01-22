@@ -1,0 +1,6 @@
+// Course
+digraph {
+	EE3141
+	PH1110
+	EE3141 -> PH1110 [label=""]
+}

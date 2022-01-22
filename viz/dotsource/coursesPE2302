@@ -1,0 +1,10 @@
+digraph G {
+	node [shape=record]
+	edge [len=2.0]
+	compound=true
+	PE2302 -> clusterPE23020
+	subgraph clusterPE23020 {
+		PE2301
+		PE2013
+	}
+}
