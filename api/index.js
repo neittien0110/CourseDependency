@@ -27,12 +27,15 @@ app.get("/course",(req,res,next)=>{
     var courseID = NaN
     /** dạng thông tin trả về, từ tham số HTTP-GET */
     var type = NaN; // Kiểu kết quả trả về
+    /** Dạng đồ thị trả về, từ tham số HTTP-GET */
+    var graph = NaN; // Kiểu kết quả trả về
 
     try {
         courseID = req.query.id.toUpperCase()
         type = req.query.type; 
+        graph = req.query.graph; 
     } catch {
-        res.json({"error":"param is invalid.", 'message': 'the path must has ?id=...&type=...'}); return;
+        res.json({"error":"param is invalid.", 'message': 'the path must has ?id=...&type=...&graph=...'}); return;
     }
     console.log(isNaN(type))
     if (isNaN(type)) {
@@ -40,8 +43,16 @@ app.get("/course",(req,res,next)=>{
     } else {
         type = type.toLowerCase(); // Kiểu kết quả trả về
     }
+    if (isNaN(graph)) {
+        graph = "0";
+    } 
+    var folder;
+    switch (graph) {
+        case "0": folder = "dotsource"; break;
+        case "1": folder = "dotsourcemoredetail"; break;
+    }
 
-    var imagePath = path.resolve(__dirname + `/${COURSE_COLLECTION_FOLDER}/dotsource/courses${courseID}.png`)
+    var imagePath = path.resolve(__dirname + `/${COURSE_COLLECTION_FOLDER}/${folder}/courses${courseID}.png`)
     console.log(imagePath);
 
     switch (type) {
@@ -59,6 +70,6 @@ app.get("/course",(req,res,next)=>{
 });
 
 //Start Server
-app.listen(3000,()=>{
-    console.log('Server is running on port 3000');
+app.listen(80,()=>{
+    console.log('Server is running on port 80');
 });
