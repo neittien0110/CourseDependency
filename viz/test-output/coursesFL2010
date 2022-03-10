@@ -1,8 +1,0 @@
-// Course
-digraph {
-	FL2010
-	FL1020
-	FL1010
-	FL1020 -> FL1010 [label=""]
-	FL2010 -> FL1020 [label=""]
-}

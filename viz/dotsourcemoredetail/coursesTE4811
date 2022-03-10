@@ -1,8 +1,0 @@
-digraph G {
-	node [shape=record]
-	edge [len=2.0]
-	compound=true
-	TE4811 -> TE3601 [label=""]
-	TE4811 -> TE3811 [label=""]
-	TE3601 -> TE3811 [arrowhead=none]
-}

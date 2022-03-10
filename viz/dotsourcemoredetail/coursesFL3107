@@ -1,6 +1,0 @@
-digraph G {
-	node [shape=record]
-	edge [len=2.0]
-	compound=true
-	FL3107 -> FL2010 [label=""]
-}

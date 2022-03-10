@@ -1,8 +1,0 @@
-digraph G {
-	node [shape=record]
-	edge [len=2.0]
-	compound=true
-	TEX4302 -> TEX4342 [label=""]
-	TEX4302 -> TEX4282 [label=""]
-	TEX4342 -> TEX4282 [arrowhead=none]
-}

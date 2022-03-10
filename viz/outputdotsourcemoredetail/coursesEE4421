@@ -1,8 +1,0 @@
-digraph G {
-	node [shape=record]
-	edge [len=2.0]
-	compound=true
-	EE4421 -> EE3510 [label=""]
-	EE4421 -> EE4220 [label=""]
-	EE3510 -> EE4220 [arrowhead=none]
-}

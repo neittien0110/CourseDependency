@@ -1,8 +1,0 @@
-digraph G {
-	node [shape=record]
-	edge [len=2.0]
-	compound=true
-	BF4340 -> BF3018 [label=""]
-	BF4340 -> BF3033 [label=""]
-	BF3018 -> BF3033 [arrowhead=none]
-}
