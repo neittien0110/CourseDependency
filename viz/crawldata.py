@@ -76,7 +76,7 @@ class Crawl():
                 index = index + 1
                 data=course.find_elements(By.CLASS_NAME,'dxgv')
                 dataid.append(course.get_attribute("id")[35:])
-                datacourse={'id': course.get_attribute("id")[35:],
+                datacourse={'STT': courseIndex,
                             'Mã học phần':  data[1].text,
                             'Tên học phần': data[2].text,
                             'Thời lượng':   data[3].text,
@@ -106,16 +106,19 @@ class Crawl():
 
                 # extenddata = browser.find_element(By.XPATH, '//*[starts-with(@id,"MainContent_gvCoursesGrid_tcdxdt'+dataid[j]+'")]')
                 ex=extenddata.find_elements(By.CSS_SELECTOR, 'b')
-                index = index + 1
-                courseIndex = courseIndex + 1
-                print("---- {index}/{num_in_page}  {courseIndex}/{courseCount}: {name}".format(index=index, num_in_page=num_in_page, courseIndex=courseIndex, courseCount=courseCount, name=ex[1].text))
                 extendcourse={'id': extenddata.get_attribute("id")[32:],
                               'Học phần điều kiện': ex[0].text,
                               'Tên tiếng anh': ex[1].text,
                               'Tên viết tắt': ex[2].text,
                               'Viện Quản lý': ex[3].text
                               }
-                dataextendcrawl.append(extendcourse)
+                datacrawl[courseIndex]['Học phần điều kiện'] =  ex[0].text
+                datacrawl[courseIndex]['Tên tiếng anh'] =  ex[1].text
+                datacrawl[courseIndex]['Tên viết tắt'] =  ex[2].text
+                datacrawl[courseIndex]['Viện Quản lý'] =  ex[3].text
+                index = index + 1
+                courseIndex = courseIndex + 1
+                print("---- {index}/{num_in_page}  {courseIndex}/{courseCount}: {name}".format(index=index, num_in_page=num_in_page, courseIndex=courseIndex, courseCount=courseCount, name=ex[1].text))
             #Kết thúc vòng lặp lấy du lieu mở rộng và lưu vào cấu trúc dataextendcrawl
             
             #Sang trang mới
@@ -123,23 +126,18 @@ class Crawl():
             dataid.clear()
             nextpage = browser.find_element(By.XPATH, '//img[@alt="Next"]')  # nut chuyen trang
             nextpage.click()  # Trang ke tiep
-            sleep(1.5)#Dung de load du lieu
+            sleep(1)#Dung de load du lieu
  
             if pageIndex % 5 == 0: 
                 df= pd.DataFrame(datacrawl)
                 df.to_csv(COURSE_COLLECTION_FOLDER + '/CourseListdata.csv')
-                df=pd.DataFrame(dataextendcrawl)
-                df.to_csv(COURSE_COLLECTION_FOLDER + '/CourseListdataextend.csv')
-                
+            
         #Ghi du lieu
         #print(datacrawl)
         df= pd.DataFrame(datacrawl)
         df.to_csv(COURSE_COLLECTION_FOLDER + '/CourseListdata.csv')
-        df=pd.DataFrame(dataextendcrawl)
-        df.to_csv(COURSE_COLLECTION_FOLDER+ '/CourseListdataextend.csv')
-
         #dong trinh duyet
-        sleep(3)
+        sleep(1)
         browser.close()
 
 Crawl.crawldata()
