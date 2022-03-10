@@ -18,7 +18,8 @@ app.use(express.json());
 app.get("/",(req,res,next)=>{
     res.send("A webapi shows the dependency tree of courses, help students choose which course need to be accomplished early and arrange their learning plan.<br/>"+
               "API: http://&lt;domain&gt;:&lt;port&gt;/course?id=...<br/>" +
-              "API: http://&lt;domain&gt;:&lt;port&gt;/course?id=...&type=json<br/>");
+              "API: http://&lt;domain&gt;:&lt;port&gt;/course?id=...&type=json<br/>" +
+              "API: http://&lt;domain&gt;:&lt;port&gt;/course?id=...&type=png&graph=1<br/>");
 })
 
 app.get("/course",(req,res,next)=>{
