@@ -36,19 +36,19 @@ app.get("/course",(req,res,next)=>{
     var graph = NaN; // Kiểu kết quả trả về
 
     try {
-        courseID = req.query.id.toUpperCase()
-        type = req.query.type; 
+        courseID = req.query.id.toUpperCase();
+        type = req.query.type;
         graph = req.query.graph; 
     } catch {
         res.json({"error":"param is invalid.", 'message': 'the path must has ?id=...&type=...&graph=...'}); return;
     }
-    console.log(isNaN(type))
-    if (isNaN(type)) {
+    console.log(type)
+    if (type == undefined) {
         type = "png";
     } else {
         type = type.toLowerCase(); // Kiểu kết quả trả về
     }
-    if (isNaN(graph)) {
+    if (graph == undefined) {
         graph = "0";
     } 
     var folder;
