@@ -1,8 +1,0 @@
-digraph G {
-	node [shape=record]
-	edge [len=2.0]
-	compound=true
-	FL3283 -> FL3250 [label=""]
-	FL3283 -> FL3260 [label=""]
-	FL3250 -> FL3260 [arrowhead=none]
-}

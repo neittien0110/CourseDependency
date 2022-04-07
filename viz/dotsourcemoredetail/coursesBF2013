@@ -1,7 +1,0 @@
-digraph G {
-	node [shape=record]
-	edge [len=2.0]
-	compound=true
-	BF2013 -> BF2012 [label=""]
-	BF2012 -> BF2010 [label=""]
-}

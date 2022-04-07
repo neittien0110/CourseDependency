@@ -1,8 +1,0 @@
-// Course
-digraph {
-	IT3030
-	IT1140
-	IT1110
-	IT3030 -> IT1140 [label=""]
-	IT3030 -> IT1110 [label=""]
-}
