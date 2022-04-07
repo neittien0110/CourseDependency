@@ -19,7 +19,12 @@ app.get("/",(req,res,next)=>{
     res.send("A webapi shows the dependency tree of courses, help students choose which course need to be accomplished early and arrange their learning plan.<br/>"+
               "API: http://&lt;domain&gt;:&lt;port&gt;/course?id=...<br/>" +
               "API: http://&lt;domain&gt;:&lt;port&gt;/course?id=...&type=json<br/>" +
-              "API: http://&lt;domain&gt;:&lt;port&gt;/course?id=...&type=png&graph=1<br/>");
+              "API: http://&lt;domain&gt;:&lt;port&gt;/course?id=...&type=png&graph=1<br/>" +
+              "Symbols:" +
+              " - blue node: prerequisite<br/>"+
+              " - pink node: dependant course<br/>"+
+              " - dot edge: half-dependant course."+
+              "");
 })
 
 app.get("/course",(req,res,next)=>{
@@ -48,11 +53,12 @@ app.get("/course",(req,res,next)=>{
     } 
     var folder;
     switch (graph) {
-        case "0": folder = "dotsource"; break;
-        case "1": folder = "dotsourcemoredetail"; break;
+        case "0": folder = "callerdep"; break;
+        case "1": folder = "dotsource"; break;
+        case "2": folder = "dotsourcemoredetail"; break;
     }
 
-    var imagePath = path.resolve(__dirname + `/${COURSE_COLLECTION_FOLDER}/${folder}/courses${courseID}.png`)
+    var imagePath = path.resolve(__dirname + `/${COURSE_COLLECTION_FOLDER}/${folder}/${courseID}.png`)
     console.log(imagePath);
 
     switch (type) {
