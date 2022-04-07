@@ -24,9 +24,10 @@ import regex as re
 # create a url variable that is the website link that needs to crawl
 BASE_URL = 'http://sis.hust.edu.vn/ModuleProgram/CourseLists.aspx'   
 
-#Thư mục chứa kết quả
-COURSE_COLLECTION_FOLDER = "/../assets"
-#COURSE_COLLECTION_FOLDER = "/assets"
+#Thư mục chứa file đâu vào
+COURSE_COLLECTION_FOLDER = "../assets"
+#Thư mục chứa file đâu ra
+OUTPUT_FOLDER = COURSE_COLLECTION_FOLDER + "/graph0"
 
 lineColors=["blue","#34084D","#00539B","#183b0b","#93585e"];
 
@@ -250,7 +251,7 @@ import csv
 
 
 #Chuyển đổi đường dẫn tương đối thành tuyệt đối
-COURSE_COLLECTION_FOLDER = os.getcwd() + COURSE_COLLECTION_FOLDER
+COURSE_COLLECTION_FOLDER = os.getcwd() + '/' + COURSE_COLLECTION_FOLDER
         
 csvfile = open(COURSE_COLLECTION_FOLDER + '/CourseListdata.csv', 'r',encoding="utf-8")
 #csvfile = open("E:\StProjects/2020-2021\BuiDucChe_CrawlVaVeCayPhuThuocHocPhan\sources/assets/CourseListdata.csv", 'r',encoding="utf-8")
@@ -306,5 +307,5 @@ for myCourse in standardizedCourses:
     findCaller(myCourse["X"], dot, setHP)
     
     #Vẽ đồ thị
-    dot.render(COURSE_COLLECTION_FOLDER + '/' + myCourse['X'], view=False,format='png')
+    dot.render(OUTPUT_FOLDER + '/' + myCourse['X'], view=False,format='png')
     dot.clear()

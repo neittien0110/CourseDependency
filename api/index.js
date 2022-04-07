@@ -53,9 +53,9 @@ app.get("/course",(req,res,next)=>{
     } 
     var folder;
     switch (graph) {
-        case "0": folder = "callerdep"; break;
-        case "1": folder = "dotsource"; break;
-        case "2": folder = "dotsourcemoredetail"; break;
+        case "0": folder = "graph0"; break;
+        case "1": folder = "graph1"; break;
+        case "2": folder = "graph2"; break;
     }
 
     var imagePath = path.resolve(__dirname + `/${COURSE_COLLECTION_FOLDER}/${folder}/${courseID}.png`)
