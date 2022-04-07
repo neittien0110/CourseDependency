@@ -1,6 +1,0 @@
-digraph G {
-	node [shape=record]
-	edge [len=2.0]
-	compound=true
-	HE4024 -> HE4014 [label=""]
-}

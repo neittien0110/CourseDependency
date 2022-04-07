@@ -1,8 +1,0 @@
-digraph G {
-	node [shape=record]
-	edge [len=2.0]
-	compound=true
-	MSE4370 -> MSE3310 [label=""]
-	MSE4370 -> MSE4311 [label=""]
-	MSE3310 -> MSE4311 [arrowhead=none]
-}

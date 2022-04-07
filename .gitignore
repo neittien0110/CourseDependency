@@ -1,0 +1,4 @@
+api/node_modules
+assets
+logs/xvba_debug.log
+api/package-lock.json

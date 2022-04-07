@@ -1,6 +1,0 @@
-digraph G {
-	node [shape=record]
-	edge [len=2.0]
-	compound=true
-	EM2131 -> MI3131 [label=""]
-}

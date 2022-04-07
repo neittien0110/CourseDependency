@@ -1,6 +1,0 @@
-digraph G {
-	node [shape=record]
-	edge [len=2.0]
-	compound=true
-	PH2010 -> PH1120 [label=""]
-}
