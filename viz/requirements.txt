@@ -1,0 +1,7 @@
+html2text
+numpy
+pandas
+webdriver
+selenium
+graphviz
+regex

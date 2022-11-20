@@ -35,58 +35,39 @@ A website and webapi show the dependency tree of courses, help students choose w
 |   |   
 |               
 ├───assets
-|       CourseListdata - Copy.csv
-|       CourseListdata.csv
-|       
-├───dotsourcemoredetail
-|       HE3011
-|       HE3011.png
-|       IT3030
-|       IT3030.png
+|   |   CourseListdata.csv           (crawling results)
+|   |    
+|   ├───graph0
+|   |       HE3011
+|   |       HE3011.png
+|   |       IT3030
+|   |       IT3030.png
 |       
 ├───viz
-|   |   crawldata.py
-|   |   Digraph.gv
-|   |   Digraph.gv.png
+|   |   crawl_personalsis.py        (crawling program)
 |   |   example.dot
-|   |   gentree.py
-|   |   graphcoursemoredetail.py
+|   |   gentree.py                  (crawling results to graph) 
+|   |   graphcoursemoredetail.py    (not in used)
 |   |   requirements.txt
-|   |   try.py
 |   |   Untitled.ipynb
 |   |   
-|   ├───.idea
-|   |   |   .gitignore
-|   |   |   aws.xml
-|   |   |   misc.xml
-|   |   |   modules.xml
-|   |   |   viz.iml
-|   |   |   
-|   |   ÀÄÄÄinspectionProfiles
-|   |           profiles_settings.xml
-|   |           
-|   ├───.ipynb_checkpoints
-|   |       Untitled-checkpoint.ipynb
-|   |       
 |   ├───BrowserDrivers
 |   |       chromedriver.exe
 |   |       geckodriver.exe
 |   |       msedgedriver.exe
 |   |       
-|   ├───dotsourcemoredetail
-|   |       BF2010
-|   |       BF2010.png
-|   |       BF2410
-|   |       
-|   ├───templates
-|   |       course.html
-|   |       picture.html
-|   |       
-
 ```
 
 * Thư mục **api** chứa code web server 
 * Thư mục **viz** chứa code crawl data , dữ liệu được crawl và dữ liệu đã phân tích và render bằng graphviz
-* API test:
-* http://sinno.soict.ai:37080/course?id=ch4040 (http://sinno.soict.ai:37080/course?id={courseid})
-* http://sinno.soict.ai:37080/course?id=it3030 (http://sinno.soict.ai:37080/course?id={courseid}.png)
+
+## Demo
+
+- Xem ảnh vẽ mối quan hệ phụ thuộc của 1 học phần nào đó: **<span>http</span>://sinno.soict.ai:37080/course?id={courseid}**
+  - http://sinno.soict.ai:37080/course?id=ch4040 
+  - http://sinno.soict.ai:37080/course?id=it3030 
+- Xem mối quan hệ phụ thuộc của 1 học phần nào đó ở dạng json, phù hợp để tích hợp vào một GUI control trên website khác: **<span>http</span>://sinno.soict.ai:37080/course?id={courseid}&type=json**
+  - http://sinno.soict.ai:37080/course?id=it1110&type=json
+- Xem mối quan hệ phụ thuộc của 1 học phần nào đó ở các dạng đồ thị khác nhau: **<span>http</span>://sinno.soict.ai:37080/course?id={courseid}&graph={index}**
+  - http://sinno.soict.ai:37080/course?id=it3030&graph=0 
+  - http://sinno.soict.ai:37080/course?id=it3030&graph=1 
