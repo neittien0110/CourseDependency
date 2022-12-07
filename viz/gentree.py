@@ -21,6 +21,8 @@ import pandas as pd
 import graphviz
 import os
 import regex as re
+from infix_prefix import infix_to_prefix  
+''' Hàm chuyển đổi biểu thức trung tố --> hậu tố'''
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # create a url variable that is the website link that needs to crawl
@@ -29,12 +31,15 @@ BASE_URL = 'http://sis.hust.edu.vn/ModuleProgram/CourseLists.aspx'
 #Thư mục chứa file đâu vào
 COURSE_COLLECTION_FOLDER = "assets"
 #Thư mục chứa file đâu ra
-OUTPUT_FOLDER = COURSE_COLLECTION_FOLDER + "/graph0"
+OUTPUT_FOLDER = COURSE_COLLECTION_FOLDER + "/graph2"
 
-lineColors=["blue","#34084D","#00539B","#183b0b","#93585e"];
+lineColors=["blue","orange","red","green","pink","#34084D","#00539B","#183b0b","#93585e"];
 
 MAX_DEPENDANCY = 100
 COMMON_NAME = "so many"
+
+GRAPH_TYPE = 2
+''' Kiểu xuất đồ thị '''
 
 def spliit(ss):
     """_summary_
@@ -85,142 +90,100 @@ def spliit(ss):
     else:
         return ss
 
+def FindFullCourse(courseId):
+    ''' Tìm cấu trúc chứa thông tin đầy đủ về một mã học phần nào đó'''
+    global standardizedCourses; 
+    for x in standardizedCourses:
+        if x['X']==courseId:
+            return x  
+    return 0 
 
-def handlesubchildnode(dot, subchildnode, clustername, setHP, HP, dota):
+def getDependent(courseId):
     """_summary_
-
+        Lấy danh sách các học phần phụ thuộc
     Args:
-        dot (Graphviz):   Đối tượng quản lý đồ thị Graphviz. Do tính đệ qui của đồ thị nên dot có thể là một vùng con.
-        subchildnode (_type_): _description_
-        clustername (_type_): _description_
-        setHP (_type_): _description_
-        HP (_type_): _description_
-        dota (_type_): _description_
+        courseId (_type_): học phần muốn tìm kiếm
+    Returns:
+        _type_: danh sách các học phần phụ thuộc
     """
-    spliit_subchildnode = spliit(subchildnode)
-    a = spliit_subchildnode.split(",")
-    if len(a) > 1:
-        for i in range(len(a)):
-            with dot.subgraph(name=clustername + str(i)) as c:
-                handlesubchildnode(c, a[i], c.name,setHP,HP,dot)
-            # Nối giữa các cluster với nhau để chứng tỏ ngang hàng. Không cần    
-            #if i > 0: 
-            #    dot.edge(clustername + str(i), clustername + str(i - 1), arrowhead='none', color=random.choice(lineColors))
-
-    else:
-        if subchildnode.find("OR") == -1 and subchildnode.find("AND") == -1 and subchildnode.find(
-                ",") == -1 and subchildnode.find("/") == -1:
-            if spliit_subchildnode in setHP:
-                #Chưa thành công
-                #RegisterAndRenderNode(dota, spliit_subchildnode, style=NodeStyle.Dependency)                    
-                dota.edge(HP, spliit_subchildnode, label='', arrowhead='none', color=random.choice(lineColors))
-            else:
-                ''' Đăng kí học phần điều kiện. từ trên xuống'''
-                RegisterAndRenderNode(dot, spliit_subchildnode, style=NodeStyle.Dependency)   
-                #dot.node(spliit_subchildnode)
-            setHP.add(spliit_subchildnode)
-        else:
-            b = spliit_subchildnode.split("/")
-            if len(b) > 1:
-                for j in b:
-                    if j in setHP:
-                        #Chưa thành công
-                        #RegisterAndRenderNode(dota, j, style=NodeStyle.Dependency)                   
-                        dota.edge(HP, j, label='', color=random.choice(lineColors))
-                    else:
-                        #RegisterAndRenderNode(dot, j, style=NodeStyle.Caller)   
-                        dot.node(j)
-                        f = getDependent(j)
-                        findedge(j, dot, setHP, f )
-
-
-def findedge(HP, dot, setHP, dependentText):
-    """_summary_
-        Tìm kiếm các cạnh phụ thuộc của 1 học phần, đệ qui
-    Args:
-        HP (_type_): Mã học phần cần tìm. Ví dụ IT3030
-        dot (_type_): handler điều khiển graphviz
-        setHP (set): tập hợp chứ các cạnh phụ thuộc
-        dependentHP (string): text mô tả sự phụ thuộc của sis
-    """    
-    
-    # Điều kiện dừng đệ qui: khi học phần là nút lá
-    if dependentText == "":
-        setHP.add(HP)
-        return
-    # Điều kiện dừng đệ qui: khi học phần đã có trong danh sách cạnh
-    if HP in setHP:
-        return
-    else:
-        setHP.add(HP)
-    # Điều kiện dừng đệ qui: kích thước đã quá l
-    if len(setHP) > MAX_DEPENDANCY:
-        dot.attr('node', shape='folder')
-        dot.node(COMMON_NAME, label=COMMON_NAME)
-        dot.attr('node', shape='box')       
-        return
-        
-    #Phân tích text chứa thông tin học phần theo kiểu của sis        
-    dependentHPs = spliit(dependentText).split(",")
-    j = 0
-    pre = ""
-    nex = ""
-    
-    for i in range(len(dependentHPs)):
-        if dependentHPs[i].find("OR") >= 0 or dependentHPs[i].find("/") >= 0: 
-            conditionOR = True 
-        else: 
-            conditionOR = False
-        if dependentHPs[i].find("AND") >= 0 or dependentHPs[i].find(",") >= 0: 
-            conditionAND = True 
-        else: 
-            conditionAND = False
-                        
-        if (not conditionOR and  not conditionAND) :
-            # Nếu chuỗi text (mã học phần đang xét) là đơn độc. Ví dụ IT1110
-            dot.edge(HP, spliit(dependentHPs[i]), label='', arrowhead='none', color=random.choice(lineColors))
-            f = getDependent(dependentHPs[i])
-            findedge(dependentHPs[i], dot, setHP, f)
-            #Hai anh này ngang cấp nhau. Không cần nối
-            #if i == 0:
-            #    pre = a[i]
-            #else:
-            #    nex = a[i]
-            #    dot.edge(pre, nex, arrowhead='none')
-            #    pre = nex
-        else:
-            # Nếu kí tự đang xét là kí tự thường
-            clusterName = 'cluster' + HP + "_"  + str(j)
-            with dot.subgraph(name=clusterName) as c:
-                #Đặt tên cho nhóm cluster các môn học phụ thuộc
-                if conditionOR:
-                    c.attr(label="ĐIỀU KIỆN HOẶC",color='red')
-                elif conditionAND:
-                    c.attr(label="ĐIỀU KIỆN VÀ TẤT CẢ",color='red')
-                    
-                #Tạo một node tượng trưng, đại diện cho cluster, vì Graphviz không cho phép cạnh với cluster
-                RegisterAndRenderNode(c, clusterName, style=NodeStyle.DependencyCluster)
-                
-                # Vẽ đường bao cho nhóm các học phần điều kiện
-                dot.edge(HP, clusterName, lhead=clusterName, arrowhead='none', color=random.choice(lineColors))
-                subchildnodes = dependentHPs[i].split("/")
-                for subchildnode in subchildnodes:
-                    handlesubchildnode(c, subchildnode, c.name, setHP, HP, dot)
-            if i == 0:
-                pre = 'cluster' + HP + "_"  + str(j)
-            else:
-                nex = 'cluster' + HP + "_"  + str(j)
-                # Ngang hàng thì không phải nối
-                #dot.edge(pre, nex, arrowhead='odiamond')
-                pre = nex
-            j = j + 1
-
-def getDependent(HP):
     for myCourse in standardizedCourses:
-        if HP == myCourse['X']:
+        if courseId == myCourse['X']:
             return myCourse['Y']
     return ""
 
+#----------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
+def findDependant(HP, dot, setHP):
+    """_summary_
+        Tìm kiếm các môn học bị phụ thuộc vào môn hiện thời.
+        Thuật giải quét chiều rộng, không đệ qui.
+    Args:
+        HP (_type_): Mã học phần cần tìm. Ví dụ IT3030
+        dot (_type_): handler điều khiển graphviz
+        setHP (set): tập hợp chứa các cạnh phụ thuộc
+    """    
+
+
+    # Hàng đợi cần tìm kiếm phụ thuộc
+    dependant_queue = []
+    # Danh sách các học phần đã xử lý xong. Loại bỏ khỏi dependant_queue thì tống vào đây
+    scaned_queue = []
+    
+    # Đưa học phần đầu tiên vào danh sách cần tìm kiếm
+    dependant_queue.append(HP)
+    RegisterAndRenderNode(dot, HP, NodeStyle.Root)
+
+    #Giới hạn số lượt quét học phần phụ thuộc
+    limited = 0;
+
+    #Quét toàn bộ danh sách các học phần cần tìm phụ thuộc
+    while len(dependant_queue)>0 :
+        #Lấy ra học phần gốc để tìm kiếm phụ thuộc
+        victim = dependant_queue.pop();
+        scaned_queue.append(victim);
+        
+        #text mô tả sự phụ thuộc của sis
+        dependentText = getDependent(victim)
+        if (dependentText == ''): continue            
+        
+        #Phân tích text chứa thông tin học phần theo kiểu của sis
+        dependentHPs = spliit(dependentText).split(",")
+               
+        if len(dependentHPs) == 0: #Trường hợp chỉ không có môn phụ thuộc VÀ
+            pass
+        elif len(dependentHPs) == 1: #Trường hợp chỉ có 1 môn phụ thuộc thì tạo đường nối trực tiếp giữa 2 học phần
+            # Lấy ra học phần phụ thuộc
+            dependantHP = dependentHPs[0]
+            # Tạo node phụ thuộc
+            RegisterAndRenderNode(dot, dependantHP, NodeStyle.Dependency)
+            # Và tạo 1 cạnh liền duy nhất, nối trực tiếp giữa học phần đang xử lý và học phần phụ thuộc duy nhất
+            dot.edge(victim, dependantHP, style="solid", color=random.choice(lineColors))
+            # Đăng kí ngay để quét tiếp            
+            victim = dependant_queue.append(dependantHP);
+        else: #Trường hợp chỉ có >=2 môn phụ thuộc thì tạo điểm trung chuyển rồi mới tạo cạnh
+            # Tạo node trung chuyển AND
+            switch_name = RegisterAndRenderNode(dot, victim, NodeStyle.And)   
+            # Lựa chọn 1 màu để tô cho các cạnh
+            edge_color = random.choice(lineColors)
+            # Tạo 1 cạnh liền duy nhất, nối trực tiếp giữa học phần đang xử lý và điểm trung chuyển
+            dot.edge(victim, switch_name, style="solid", color=edge_color )
+            # Rồi tiếp tục 
+            # Todo: làm thế nào để đưa các phụ thuộc dependantHPs vào danh sách dependant_queue bây giờ nhỉ
+
+            for dependantHP in dependentHPs:
+                # Tạo các node của các học phần phụ thuộc
+                RegisterAndRenderNode(dot, dependantHP, NodeStyle.Dependency)
+                # Tạo cạnh kết nối giữa điểm trung gian với các HP phụ thuộc VÀ
+                dot.edge(switch_name, dependantHP, style="solid", color=edge_color)
+                # Ghi nhớ các học phần phụ thuộc để tiếp tục quét.
+                if not (dependantHP in dependant_queue) and not (dependantHP in scaned_queue):
+                    dependant_queue.append(dependantHP)
+            # Kết thúc vòng lặp tìm và đăng kí các học phần phụ thuộc
+        # Hết lệnh if
+    # Kết thúc vòng lặp duyệt tất cả các phần tử dependant_queue
+    return
+#----------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------
 def findCaller(HP, dot, setHP):
     """_summary_
         Tìm kiếm các môn học bị phụ thuộc vào môn hiện thời
@@ -232,13 +195,18 @@ def findCaller(HP, dot, setHP):
 
     # Hàng đợi cần tìm kiếm phụ thuộc
     caller_queue = []
+    
+    # Đưa học phần đầu tiên vào danh sách cần tìm kiếm
     caller_queue.append(HP)
 
     #Giới hạn số lượt quét học phần phụ thuộc
     limited = 0;
+    
+    #Quét toàn bộ danh sách các học phần cần tìm phụ thuộc
     while len(caller_queue)>0 :
+        #Lấy ra học phần gốc để tìm kiếm học phần triệu gọi
         victim = caller_queue.pop();
-        
+
         for myCourse in standardizedCourses:
             # Tìm xem học phần này có môn nào phụ thuộc không
             pos = str(myCourse['Y']).find(victim)
@@ -265,7 +233,8 @@ def findCaller(HP, dot, setHP):
             # Tạo node caller và..
             RegisterAndRenderNode(dot, Caller, NodeStyle.Caller)   
             
-            # .. và vẽ thêm cạnh nối vào đồ thị    
+            # .. và vẽ thêm cạnh nối vào đồ thị.
+            # Vẽ nét đứt nếu bị lệ thuộc một phần (do điều kiện hoặc), và nét liền nếu lệ thuộc hoàn toàn (điều kiện and)
             if halfCaller:
                 dot.edge(Caller, victim, style="dotted")
             else: 
@@ -277,10 +246,6 @@ def findCaller(HP, dot, setHP):
                 limited = limited + 1
                 caller_queue.append(Caller);
         # Kết thúc vòng lặp tìm xem có môn học nào phụ thuộc vào myCourse không?           
-    if (limited > MAX_DEPENDANCY):    
-        dot.attr('node', shape='folder')
-        dot.node(COMMON_NAME, label=COMMON_NAME)
-        dot.attr('node', shape='box')
     return
     
 
@@ -291,34 +256,27 @@ class NodeStyle(Enum):
     CallerCluster =2
     Dependency = -1
     DependencyCluster = -2
+    And = 9000          #Mã 9xxx dành cho các node tượng trưng/node switch phân cạnh, không phải học phần
+    Or =  9001
 
-
-def FindFullCourse(courseId):
-    ''' Tìm cấu trúc chứa thông tin đầy đủ về một mã học phần nào đó'''
-    global standardizedCourses; 
-    for x in standardizedCourses:
-        if x['X']==courseId:
-            return x  
-    return 0 
-
-def RegisterAndRenderNode(dot, coureId, style):
+def RegisterAndRenderNode(dot, courseId, style : NodeStyle):
     """_summary_
         Vẽ thông tin node lên đồ thị 
     Args:
         dot (Graphviz):   Đối tượng quản lý đồ thị Graphviz. Do tính đệ qui của đồ thị nên dot có thể là một vùng con.
-        coureId (string): Mã học phần. Ví dụ IT1110.
-        style (NodeStyle): kiểu hiển thị
+        courseId (string): Mã học phần. Ví dụ IT1110.
+        style (NodeStyle): kiểu hiển thị. Đối với kiểu And, Or thì courseId sẽ dặt lại thành courseId_And, courseId_Or
     """   
     if (style == NodeStyle.CallerCluster or style == NodeStyle.DependencyCluster):
         myCourse = 0
     else:
-        myCourse = FindFullCourse(coureId)
+        myCourse = FindFullCourse(courseId)
+        
+    graphNodeId = courseId
+    '''Tên định danh của node trong cấu trúc đồ thị Graphviz'''
     
-    ''' Cấu trúc chứa thông tin cần vẽ '''
-    graphtype = 1
-
     if myCourse != 0: 
-        if graphtype == 0:
+        if GRAPH_TYPE == 0:
             if (style == NodeStyle.Root):
                 dot.attr('node', shape='house', color='red:orange', style='filled', gradientangle='270', fontcolor='white')
             if (style == NodeStyle.Caller):
@@ -327,7 +285,7 @@ def RegisterAndRenderNode(dot, coureId, style):
                 dot.attr('node', shape='record', color='lightblue', style='filled', fontcolor='black')
                 pass        
             dot.node(myCourse['Mã học phần'], label=myCourse['Mã học phần']) 
-        elif graphtype == 1:        
+        elif GRAPH_TYPE == 1:        
             # Trường hợp là node của học phần gốc cần tính toán
             if (style == NodeStyle.Root):
                 dot.attr('node', shape='record', color='red:orange', style='filled', gradientangle='270', fontcolor='white', fontsize="18", fontname="Tahoma")
@@ -347,14 +305,47 @@ def RegisterAndRenderNode(dot, coureId, style):
                 ) + "}")          
             except:
                 # Ghi nhận lỗi với node có tên là "so many"
-                print ("Không vẽ được với " + str(coureId))    
-    else:
+                print ("Không vẽ được với " + str(courseId))    
+        elif GRAPH_TYPE == 2:        
+            # Trường hợp là node của học phần gốc cần tính toán
+            if (style == NodeStyle.Root):
+                dot.attr('node', shape='record', color='red:orange', style='filled', gradientangle='270', fontcolor='white', fontsize="18", fontname="Tahoma")
+            # Trường hợp là node của học phần bị phụ thuộc vào học phần hiện tại
+            if (style == NodeStyle.Caller):
+                dot.attr('node', shape='record', color='#ff000042', style='filled', fontcolor='black', fontsize="14", fontname="Tahoma")
+                pass
+            # Trường hợp là node của học phần điều kiện
+            if (style == NodeStyle.Dependency):
+                dot.attr('node', shape='record', color='lightblue', style='filled', fontcolor='black', fontsize="14", fontname="Tahoma")
+                pass
+            # Trường hợp là node của học phần điều kiện
+            if (style == NodeStyle.And or style == NodeStyle.Or):
+                dot.attr('node', shape='circle', color='gray', style='', fontcolor='darkgreen', fontsize="10", fontname="Tahoma")
+                pass
+            #-------------------------------------------------------------
+            if style == NodeStyle.And:
+                graphNodeId = myCourse['Mã học phần']+"_And"
+                dot.node(graphNodeId, label="và")
+            elif style == NodeStyle.Or:
+                graphNodeId = myCourse['Mã học phần']+"_Or"
+                dot.node(graphNodeId, label="hoặc")
+            else:
+                try: 
+                    dot.node(myCourse['Mã học phần'], label="{" + "{id} | {name} | {credit}".format(
+                    id = myCourse['Mã học phần'],
+                    name=myCourse['Tên học phần'],
+                    credit=myCourse['Thời lượng'] + " / " + str(myCourse['TC học phí']) + "đ / " + str(myCourse['Trọng số'])  ,
+                    ) + "}")          
+                except:
+                    # Ghi nhận lỗi với node có tên là "so many"
+                    print ("Không vẽ được với " + str(courseId))                    
+    else: 
         dot.attr(shape='box', style='rounded' ,color='blue')
         dot.attr('node', shape='record', color='lightblue', style='filled', fontcolor='black', fontsize="14", fontname="Tahoma")
         # Trường hợp là khung của nhóm môn học thì không có thông tin credit
         dot.edge_attr.update(arrowhead='inv', arrowsize='1',)
-        dot.node(coureId)
-    
+        dot.node(courseId)
+    return graphNodeId
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Main program
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -396,11 +387,15 @@ courseIndex = 0
 for myCourse in standardizedCourses:
     courseIndex  = courseIndex + 1;
     
-    #if not ((myCourse['X'] == 'IT1110') or (myCourse['X'] == 'IT3030') or (myCourse['X'] == 'IT4015') or (myCourse['X']=='IT3150')):
-    #    continue        
+    if not ((myCourse['X'] == 'BF4212') or (myCourse['X'] == 'BF4319')
+            or (myCourse['X'] == 'BF4321') or (myCourse['X']=='CH4714')
+            or (myCourse['X'] == 'EM4625') or (myCourse['X']=='EV3121')
+            or (myCourse['X'] == 'EV4113') or (myCourse['X']=='IT4653')
+            or (myCourse['X'] == 'CH5700') or (myCourse['X']=='EE3510')) :
+        continue        
     #if courseIndex < 2520: 
     #    continue
-    #if (myCourse['X'] != 'IT3030'):
+    #if (myCourse['X'] != 'BF3022'):
     #   continue        
                     
     setHP.clear();
@@ -421,7 +416,11 @@ for myCourse in standardizedCourses:
     # Lần theo dấu vết các cạnh là các học phần phụ thuộc
     dot.attr('node', shape='box', color='white', style='filled', fontcolor='black')     # Không hiểu sao phải thiết lập thuộc tính ở đây, nếu không thì node đại diện cho cluster sẽ kông đổi atrribute được
     dot.edge_attr.update(arrowhead='none', arrowsize='1')
-    findedge(myCourse["X"], dot, setHP, myCourse['Y'])
+    if GRAPH_TYPE==0 or GRAPH_TYPE==1:
+        #findedge(myCourse["X"], dot, setHP, myCourse['Y'])
+        pass
+    elif GRAPH_TYPE==2:
+        findDependant(myCourse["X"], dot, setHP)
     
     # Lần theo dấu vết các cạnh là các học phần cần môn này
     #dot.attr('node', shape='box', color='#ff000042', style='filled', fontcolor='black')    
