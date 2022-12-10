@@ -150,7 +150,9 @@ def findDependant(HP, dot, setHP):
     while len(dependant_queue)>0 :
         #Lấy ra học phần gốc để tìm kiếm phụ thuộc
         victim = dependant_queue.pop();
-        scaned_queue.append(victim);
+        if victim in scaned_queue:
+            continue
+        scaned_queue.append(victim)
         
         #text mô tả sự phụ thuộc của sis
         dependentText = getDependent(victim)
@@ -166,7 +168,7 @@ def findDependant(HP, dot, setHP):
         
         while (len(parent_queue)>0):       
             childrenTopo = parent_queue.pop()
-            parent = parent_queue.pop()            
+            parent = parent_queue.pop()
             #Nếu có toán tử, thì ngay lập tức tạo node trung gian
             if (childrenTopo.__contains__("operator")):
                 # Tạo node trung chuyển 
@@ -276,6 +278,10 @@ class NodeStyle(Enum):
     And = 9000          #Mã 9xxx dành cho các node tượng trưng/node switch phân cạnh, không phải học phần
     Or =  9001
 
+
+ScannedNodes = []
+''' Danh sách các node đã tồn tại'''
+
 def RegisterAndRenderNode(dot, courseId, style : NodeStyle):
     """_summary_
         Vẽ thông tin node lên đồ thị 
@@ -284,6 +290,7 @@ def RegisterAndRenderNode(dot, courseId, style : NodeStyle):
         courseId (string): Mã học phần. Ví dụ IT1110.
         style (NodeStyle): kiểu hiển thị. Đối với kiểu And, Or thì courseId sẽ dặt lại thành courseId_And, courseId_Or
     """   
+        
     if (style == NodeStyle.CallerCluster or style == NodeStyle.DependencyCluster):
         myCourse = 0
     else:
@@ -310,18 +317,24 @@ def RegisterAndRenderNode(dot, courseId, style : NodeStyle):
     #-------------------------------------------------------------
     if style == NodeStyle.And:
         graphNodeId = str(courseId) + "_And"
-        dot.node(graphNodeId, label="và")
+        if not graphNodeId in ScannedNodes:
+            dot.node(graphNodeId, label="và")
+        ScannedNodes.append(graphNodeId)
     elif style == NodeStyle.Or:
         graphNodeId = str(courseId) + "_Or"
-        dot.node(graphNodeId, label="hoặc")
+        if not graphNodeId in ScannedNodes:
+            dot.node(graphNodeId, label="hoặc")
+        ScannedNodes.append(graphNodeId)
     else:
         try: 
-            dot.node(myCourse['Mã học phần'], label="{" + "{id} | {name}  | {condition} | {credit}".format(
+            graphNodeId = myCourse['Mã học phần']
+            dot.node(graphNodeId, label="{" + "{id} | {name}  | {condition} | {credit}".format(
             id = myCourse['Mã học phần'],
             name=myCourse['Tên học phần'],
             condition = myCourse['Học phần điều kiện'],
             credit=myCourse['Thời lượng'] + " / " + str(myCourse['TC học phí']) + "đ / " + str(myCourse['Trọng số'])  ,
-            ) + "}")          
+            ) + "}")       
+            ScannedNodes.append(graphNodeId)   
         except:
             # Ghi nhận lỗi với node có tên là "so many"
             print ("Không vẽ được với " + str(courseId))                    
@@ -367,7 +380,7 @@ courseIndex = 0
 for myCourse in standardizedCourses:
     courseIndex  = courseIndex + 1;
     
-    if not ((myCourse['X'] == 'EM4625') or (myCourse['X'] == 'BF3010')
+    if not ((myCourse['X'] == 'CH3225') or (myCourse['X'] == 'BF3010')
             or (myCourse['X'] == 'BF4321') or (myCourse['X']=='CH4714')
             or (myCourse['X'] == 'CH3306') or (myCourse['X']=='EV3121')
             or (myCourse['X'] == 'EV4113') or (myCourse['X']=='IT4653')
@@ -396,6 +409,7 @@ for myCourse in standardizedCourses:
     # Lần theo dấu vết các cạnh là các học phần phụ thuộc
     dot.attr('node', shape='box', color='white', style='filled', fontcolor='black')     # Không hiểu sao phải thiết lập thuộc tính ở đây, nếu không thì node đại diện cho cluster sẽ kông đổi atrribute được
     dot.edge_attr.update(arrowhead='none', arrowsize='1')
+    ScannedNodes.clear()
     findDependant(myCourse["X"], dot, setHP)
     
     # Lần theo dấu vết các cạnh là các học phần cần môn này
