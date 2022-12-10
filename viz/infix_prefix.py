@@ -1,10 +1,12 @@
-class infix_to_prefix:
+import json
+
+class ExpressionConverter:
     """
         Chuyển đổi biểu thức trung tố --> tiền tố
         Yêu cầu: mọi toán hạng đều gồm 6 kí tự số và chữ.
     """    
     precedence={'/':6,',':5,'=':4,'!':3,'(':2,')':1}
-    precedence={'^':5,'*':4,'/':4,'+':3,'-':3,'(':2,')':1}
+    #precedence={'^':5,'*':4,'/':4,'+':3,'-':3,'(':2,')':1}
     ''' Danh sách các toán tử'''
     def __init__(self):
         self.items=[]
@@ -50,7 +52,16 @@ class infix_to_prefix:
                 index = index + 1
         return rev
     
-    def infixtoprefix (self,expression):
+    def infixtoprefix (self,expression, isPrefix = True):
+        """_summary_
+            Chuyển đổi biểu thức trung tố thành biểu thức tiền tố/hậu tố
+        Args:
+            expression (string): biểu thức trung tố. Ví dụ (IT1000/IT1001),(CH1000/CH1001),(BB1000/BB1001)
+            isPrefix (bool): là biểu thức tiền tố (True), hoặc ngược lại là hậu tố (False)
+        Returns:
+            string: biểu thức tiền tố/hậu tố.
+        """
+                
         expr = self.reverse(expression)
         prefix=""
         index = 0
@@ -58,7 +69,8 @@ class infix_to_prefix:
             ch = expr[index]
             if(self.is0perand(ch)):
                 # Đưa toán hạng vào ngăn xếp
-                prefix +=expr[index:index+6]
+                operand = expr[index:index+6] 
+                prefix +=operand
                 index = index + 5 # sẽ +1 sau
             elif ch == '(':
                 # Đưa ngoặc vào ngăn xếp
@@ -74,10 +86,58 @@ class infix_to_prefix:
                 self.push(ch)
             index = index + 1
         #end of while
-        backup_items = self.items
         while len(self.items):
             if(self.seek()=='('):
                 self.pop()
             else:
                 prefix+=self.pop()
-        return self.reverse(prefix), backup_items
+        if isPrefix:
+            # Trả về dạng tiền tố
+            return self.reverse(prefix)
+        else:
+            # Trả về dạng hậu tố
+            return prefix
+
+    def infixtodict (self,expression):
+        """_summary_
+            Chuyển đổi biểu thức trung tố thành cấu trúc python dictionary
+        Args:
+            expression (string): biểu thức trung tố. Ví dụ (IT1000/IT1001),(CH1000/CH1001),(BB1000/BB1001)
+        Returns:
+            dict: thể hiển biểu thức. {"operator":"/","operands":[]}. Ví dụ {'operator': ',', 'operands': [{'operator': ',', 'operands': [{'operator': '/', 'operands': ['IT1000', 'IT1001']}, {'operator': '/', 'operands': ['CH1000', 'CH1001']}]}, {'operator': '/', 'operands': ['BB1000', 'BB1001']}]}
+        """
+        #return {"operator":"/","operand":["CH1123",{"operator":",","operand":["ABC","CDE"]}]}
+        expr = self.reverse(expression)
+        index = 0
+        operands=[]
+        while index < len(expr):
+            ch = expr[index]
+            if(self.is0perand(ch)):
+                # Đưa toán hạng vào ngăn xếp
+                operand = expr[index:index+6] 
+                operands.append(operand)
+                index = index + 5 # sẽ +1 sau
+            elif ch == '(':
+                # Đưa ngoặc vào ngăn xếp
+                self.push(ch)
+            elif ch == ')':
+                o=self.pop()
+                while o!='(':
+                    littlejson = {"operator":o,"operands":[operands.pop(),operands.pop()]}
+                    operands.append(littlejson)                    
+                    o=self.pop()
+
+            elif(ch in self.precedence):  # tất nhiên đã loại 2 dấu ngoặc ra rồi
+                while(len(self.items)and self.precedence[ch] < self.precedence[self.seek()]):
+                    self.pop()
+                self.push(ch)
+            index = index + 1
+        #end of while
+        while len(self.items):
+            if(self.seek()=='('):
+                self.pop()
+            else:
+                o=self.pop()
+                littlejson = {"operator":o,"operands":[operands.pop(),operands.pop()]}
+                operands.append(littlejson)                                    
+        return operands.pop()

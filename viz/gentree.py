@@ -20,8 +20,8 @@ from numpy import NAN
 import pandas as pd
 import graphviz
 import os
-import regex as re
-from infix_prefix import infix_to_prefix  
+import json
+from infix_prefix import ExpressionConverter  
 ''' Hàm chuyển đổi biểu thức trung tố --> hậu tố'''
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -111,6 +111,12 @@ def getDependent(courseId):
             return myCourse['Y']
     return ""
 
+def Operator2NodeStyle(operator):
+    if operator == ",":
+        return NodeStyle.And
+    elif operator == "/":
+        return NodeStyle.Or
+
 #----------------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------------
 def findDependant(HP, dot, setHP):
@@ -133,6 +139,10 @@ def findDependant(HP, dot, setHP):
     dependant_queue.append(HP)
     RegisterAndRenderNode(dot, HP, NodeStyle.Root)
 
+    '''Phụ trách phân tích biểu thức phụ thuộc'''
+    EC = ExpressionConverter(); '''Phụ trách phân tích biểu thức phụ thuộc'''
+    '''Phụ trách phân tích biểu thức phụ thuộc'''
+
     #Giới hạn số lượt quét học phần phụ thuộc
     limited = 0;
 
@@ -144,41 +154,48 @@ def findDependant(HP, dot, setHP):
         
         #text mô tả sự phụ thuộc của sis
         dependentText = getDependent(victim)
-        if (dependentText == ''): continue            
+        if (dependentText == ''): continue
         
         #Phân tích text chứa thông tin học phần theo kiểu của sis
-        dependentHPs = spliit(dependentText).split(",")
-               
-        if len(dependentHPs) == 0: #Trường hợp chỉ không có môn phụ thuộc VÀ
-            pass
-        elif len(dependentHPs) == 1: #Trường hợp chỉ có 1 môn phụ thuộc thì tạo đường nối trực tiếp giữa 2 học phần
-            # Lấy ra học phần phụ thuộc
-            dependantHP = dependentHPs[0]
-            # Tạo node phụ thuộc
-            RegisterAndRenderNode(dot, dependantHP, NodeStyle.Dependency)
-            # Và tạo 1 cạnh liền duy nhất, nối trực tiếp giữa học phần đang xử lý và học phần phụ thuộc duy nhất
-            dot.edge(victim, dependantHP, style="solid", color=random.choice(lineColors))
-            # Đăng kí ngay để quét tiếp            
-            victim = dependant_queue.append(dependantHP);
-        else: #Trường hợp chỉ có >=2 môn phụ thuộc thì tạo điểm trung chuyển rồi mới tạo cạnh
-            # Tạo node trung chuyển AND
-            switch_name = RegisterAndRenderNode(dot, victim, NodeStyle.And)   
-            # Lựa chọn 1 màu để tô cho các cạnh
-            edge_color = random.choice(lineColors)
-            # Tạo 1 cạnh liền duy nhất, nối trực tiếp giữa học phần đang xử lý và điểm trung chuyển
-            dot.edge(victim, switch_name, style="solid", color=edge_color )
-            # Rồi tiếp tục 
-            # Todo: làm thế nào để đưa các phụ thuộc dependantHPs vào danh sách dependant_queue bây giờ nhỉ
-
-            for dependantHP in dependentHPs:
-                # Tạo các node của các học phần phụ thuộc
-                RegisterAndRenderNode(dot, dependantHP, NodeStyle.Dependency)
-                # Tạo cạnh kết nối giữa điểm trung gian với các HP phụ thuộc VÀ
-                dot.edge(switch_name, dependantHP, style="solid", color=edge_color)
-                # Ghi nhớ các học phần phụ thuộc để tiếp tục quét.
-                if not (dependantHP in dependant_queue) and not (dependantHP in scaned_queue):
-                    dependant_queue.append(dependantHP)
-            # Kết thúc vòng lặp tìm và đăng kí các học phần phụ thuộc
+        dependentTopo = EC.infixtodict(dependentText)
+        
+        #Top của cấu trúc phụ thuộc đương nhiên là học phần gốc rồi.
+        parent_queue = []
+        parent_queue.append(victim)
+        parent_queue.append(dependentTopo)
+        
+        while (len(parent_queue)>0):       
+            childrenTopo = parent_queue.pop()
+            parent = parent_queue.pop()            
+            #Nếu có toán tử, thì ngay lập tức tạo node trung gian
+            if (childrenTopo.__contains__("operator")):
+                # Tạo node trung chuyển 
+                switch_name = RegisterAndRenderNode(dot, str(childrenTopo).__hash__(), Operator2NodeStyle(childrenTopo['operator']))
+                # Lựa chọn 1 màu để tô cho các cạnh
+                edge_color = random.choice(lineColors)
+                # Tạo 1 cạnh liền duy nhất, nối trực tiếp giữa học phần đang xử lý và điểm trung chuyển
+                dot.edge(parent, switch_name, style="solid", color=edge_color )
+                # chuyển parent thành điểm trung gian toán tư luôn
+                parent = switch_name
+                
+            #Kết nối với các toán hạng đang có
+            if (childrenTopo.__contains__("operands")):
+                children = childrenTopo["operands"]
+            elif type(childrenTopo) == str:
+                children = [childrenTopo]
+            else:
+                children = childrenTopo
+            for operand in children:
+                # Đăng kí ngay để quét tiếp            
+                if type(operand) == dict:
+                    parent_queue.append(parent);
+                    parent_queue.append(operand);
+                else:
+                    # Tạo node phụ thuộc
+                    RegisterAndRenderNode(dot, operand, NodeStyle.Dependency)
+                    # Và tạo 1 cạnh liền duy nhất, nối trực tiếp giữa học phần đang xử lý và học phần phụ thuộc duy nhất
+                    dot.edge(parent, operand, style="solid", color=random.choice(lineColors))                    
+                    dependant_queue.append(operand);                    
         # Hết lệnh if
     # Kết thúc vòng lặp duyệt tất cả các phần tử dependant_queue
     return
@@ -206,7 +223,7 @@ def findCaller(HP, dot, setHP):
     while len(caller_queue)>0 :
         #Lấy ra học phần gốc để tìm kiếm học phần triệu gọi
         victim = caller_queue.pop();
-
+        
         for myCourse in standardizedCourses:
             # Tìm xem học phần này có môn nào phụ thuộc không
             pos = str(myCourse['Y']).find(victim)
@@ -275,76 +292,39 @@ def RegisterAndRenderNode(dot, courseId, style : NodeStyle):
     graphNodeId = courseId
     '''Tên định danh của node trong cấu trúc đồ thị Graphviz'''
     
-    if myCourse != 0: 
-        if GRAPH_TYPE == 0:
-            if (style == NodeStyle.Root):
-                dot.attr('node', shape='house', color='red:orange', style='filled', gradientangle='270', fontcolor='white')
-            if (style == NodeStyle.Caller):
-                pass
-            if (style == NodeStyle.Dependency):
-                dot.attr('node', shape='record', color='lightblue', style='filled', fontcolor='black')
-                pass        
-            dot.node(myCourse['Mã học phần'], label=myCourse['Mã học phần']) 
-        elif GRAPH_TYPE == 1:        
-            # Trường hợp là node của học phần gốc cần tính toán
-            if (style == NodeStyle.Root):
-                dot.attr('node', shape='record', color='red:orange', style='filled', gradientangle='270', fontcolor='white', fontsize="18", fontname="Tahoma")
-            # Trường hợp là node của học phần bị phụ thuộc vào học phần hiện tại
-            if (style == NodeStyle.Caller):
-                dot.attr('node', shape='record', color='#ff000042', style='filled', fontcolor='black', fontsize="14", fontname="Tahoma")
-                pass
-            # Trường hợp là node của học phần điều kiện
-            if (style == NodeStyle.Dependency):
-                dot.attr('node', shape='record', color='lightblue', style='filled', fontcolor='black', fontsize="14", fontname="Tahoma")
-                pass
-            try: 
-                dot.node(myCourse['Mã học phần'], label="{" + "{id} | {name} | {credit}".format(
-                id = myCourse['Mã học phần'],
-                name=myCourse['Tên học phần'],
-                credit=myCourse['Thời lượng'] + " / " + str(myCourse['TC học phí']) + "đ / " + str(myCourse['Trọng số'])  ,
-                ) + "}")          
-            except:
-                # Ghi nhận lỗi với node có tên là "so many"
-                print ("Không vẽ được với " + str(courseId))    
-        elif GRAPH_TYPE == 2:        
-            # Trường hợp là node của học phần gốc cần tính toán
-            if (style == NodeStyle.Root):
-                dot.attr('node', shape='record', color='red:orange', style='filled', gradientangle='270', fontcolor='white', fontsize="18", fontname="Tahoma")
-            # Trường hợp là node của học phần bị phụ thuộc vào học phần hiện tại
-            if (style == NodeStyle.Caller):
-                dot.attr('node', shape='record', color='#ff000042', style='filled', fontcolor='black', fontsize="14", fontname="Tahoma")
-                pass
-            # Trường hợp là node của học phần điều kiện
-            if (style == NodeStyle.Dependency):
-                dot.attr('node', shape='record', color='lightblue', style='filled', fontcolor='black', fontsize="14", fontname="Tahoma")
-                pass
-            # Trường hợp là node của học phần điều kiện
-            if (style == NodeStyle.And or style == NodeStyle.Or):
-                dot.attr('node', shape='circle', color='gray', style='', fontcolor='darkgreen', fontsize="10", fontname="Tahoma")
-                pass
-            #-------------------------------------------------------------
-            if style == NodeStyle.And:
-                graphNodeId = myCourse['Mã học phần']+"_And"
-                dot.node(graphNodeId, label="và")
-            elif style == NodeStyle.Or:
-                graphNodeId = myCourse['Mã học phần']+"_Or"
-                dot.node(graphNodeId, label="hoặc")
-            else:
-                try: 
-                    dot.node(myCourse['Mã học phần'], label="{" + "{id} | {name} | {credit}".format(
-                    id = myCourse['Mã học phần'],
-                    name=myCourse['Tên học phần'],
-                    credit=myCourse['Thời lượng'] + " / " + str(myCourse['TC học phí']) + "đ / " + str(myCourse['Trọng số'])  ,
-                    ) + "}")          
-                except:
-                    # Ghi nhận lỗi với node có tên là "so many"
-                    print ("Không vẽ được với " + str(courseId))                    
-    else: 
-        dot.attr(shape='box', style='rounded' ,color='blue')
+    # Trường hợp là node của học phần gốc cần tính toán
+    if (style == NodeStyle.Root):
+        dot.attr('node', shape='record', color='red:orange', style='filled', gradientangle='270', fontcolor='white', fontsize="18", fontname="Tahoma")
+    # Trường hợp là node của học phần bị phụ thuộc vào học phần hiện tại
+    if (style == NodeStyle.Caller):
+        dot.attr('node', shape='record', color='#ff000042', style='filled', fontcolor='black', fontsize="14", fontname="Tahoma")
+        pass
+    # Trường hợp là node của học phần điều kiện
+    if (style == NodeStyle.Dependency):
         dot.attr('node', shape='record', color='lightblue', style='filled', fontcolor='black', fontsize="14", fontname="Tahoma")
-        # Trường hợp là khung của nhóm môn học thì không có thông tin credit
-        dot.edge_attr.update(arrowhead='inv', arrowsize='1',)
-        dot.node(courseId)
+        pass
+    # Trường hợp là node của học phần điều kiện
+    if (style == NodeStyle.And or style == NodeStyle.Or):
+        dot.attr('node', shape='circle', color='gray', style='', fontcolor='darkgreen', fontsize="10", fontname="Tahoma")
+        pass
+    #-------------------------------------------------------------
+    if style == NodeStyle.And:
+        graphNodeId = str(courseId) + "_And"
+        dot.node(graphNodeId, label="và")
+    elif style == NodeStyle.Or:
+        graphNodeId = str(courseId) + "_Or"
+        dot.node(graphNodeId, label="hoặc")
+    else:
+        try: 
+            dot.node(myCourse['Mã học phần'], label="{" + "{id} | {name}  | {condition} | {credit}".format(
+            id = myCourse['Mã học phần'],
+            name=myCourse['Tên học phần'],
+            condition = myCourse['Học phần điều kiện'],
+            credit=myCourse['Thời lượng'] + " / " + str(myCourse['TC học phí']) + "đ / " + str(myCourse['Trọng số'])  ,
+            ) + "}")          
+        except:
+            # Ghi nhận lỗi với node có tên là "so many"
+            print ("Không vẽ được với " + str(courseId))                    
     return graphNodeId
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Main program
@@ -387,15 +367,15 @@ courseIndex = 0
 for myCourse in standardizedCourses:
     courseIndex  = courseIndex + 1;
     
-    if not ((myCourse['X'] == 'BF4212') or (myCourse['X'] == 'BF4319')
+    if not ((myCourse['X'] == 'EM4625') or (myCourse['X'] == 'BF3010')
             or (myCourse['X'] == 'BF4321') or (myCourse['X']=='CH4714')
-            or (myCourse['X'] == 'EM4625') or (myCourse['X']=='EV3121')
+            or (myCourse['X'] == 'CH3306') or (myCourse['X']=='EV3121')
             or (myCourse['X'] == 'EV4113') or (myCourse['X']=='IT4653')
             or (myCourse['X'] == 'CH5700') or (myCourse['X']=='EE3510')) :
         continue        
     #if courseIndex < 2520: 
     #    continue
-    #if (myCourse['X'] != 'BF3022'):
+    #if (myCourse['X'] != 'CH3630'):
     #   continue        
                     
     setHP.clear();
@@ -416,11 +396,7 @@ for myCourse in standardizedCourses:
     # Lần theo dấu vết các cạnh là các học phần phụ thuộc
     dot.attr('node', shape='box', color='white', style='filled', fontcolor='black')     # Không hiểu sao phải thiết lập thuộc tính ở đây, nếu không thì node đại diện cho cluster sẽ kông đổi atrribute được
     dot.edge_attr.update(arrowhead='none', arrowsize='1')
-    if GRAPH_TYPE==0 or GRAPH_TYPE==1:
-        #findedge(myCourse["X"], dot, setHP, myCourse['Y'])
-        pass
-    elif GRAPH_TYPE==2:
-        findDependant(myCourse["X"], dot, setHP)
+    findDependant(myCourse["X"], dot, setHP)
     
     # Lần theo dấu vết các cạnh là các học phần cần môn này
     #dot.attr('node', shape='box', color='#ff000042', style='filled', fontcolor='black')    
