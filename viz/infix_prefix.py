@@ -45,8 +45,9 @@ class ExpressionConverter:
             elif ch == ')':
                 ch='('
             if self.is0perand(ch):
-                rev=expr[index:index+6]+rev
-                index = index + 6
+                operand, length = self.GetOperand(expr, index)
+                rev=operand+rev
+                index = index + length
             else:       
                 rev=ch+rev
                 index = index + 1
@@ -69,9 +70,9 @@ class ExpressionConverter:
             ch = expr[index]
             if(self.is0perand(ch)):
                 # Đưa toán hạng vào ngăn xếp
-                operand = expr[index:index+6] 
+                operand, length = self.GetOperand(expr, index)
                 prefix +=operand
-                index = index + 5 # sẽ +1 sau
+                index = index + length - 1 # sẽ +1 sau
             elif ch == '(':
                 # Đưa ngoặc vào ngăn xếp
                 self.push(ch)
@@ -98,6 +99,17 @@ class ExpressionConverter:
             # Trả về dạng hậu tố
             return prefix
         
+    def GetOperand(self,expression, start):
+        res = "";
+        index = start;
+        while self.is0perand(expression[index]):
+            res = res + expression[index];
+            index = index + 1   
+            if index == len(expression):
+                index + 1
+                break
+        return res, (index - start)
+    
     def infixtodict (self,expression):
         """_summary_
             Chuyển đổi biểu thức trung tố thành cấu trúc python dictionary
@@ -114,9 +126,9 @@ class ExpressionConverter:
             ch = expr[index]
             if(self.is0perand(ch)):
                 # Đưa toán hạng vào ngăn xếp
-                operand = expr[index:index+6] 
+                operand, length = self.GetOperand(expr, index)
                 operands.append(operand)
-                index = index + 5 # sẽ +1 sau
+                index = index + length - 1 # sẽ +1 sau
             elif ch == '(':
                 # Đưa ngoặc vào ngăn xếp
                 self.push(ch)
