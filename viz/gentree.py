@@ -26,19 +26,18 @@ from infix_prefix import ExpressionConverter
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # create a url variable that is the website link that needs to crawl
-BASE_URL = 'http://sis.hust.edu.vn/ModuleProgram/CourseLists.aspx'   
+BASE_URL = 'http://sinno.soict.ai:37080/course'   
 
 #Thư mục chứa file đâu vào
 COURSE_COLLECTION_FOLDER = "assets"
 #Thư mục chứa file đâu ra
-OUTPUT_FOLDER = COURSE_COLLECTION_FOLDER + "/graph2"
+OUTPUT_FOLDER = COURSE_COLLECTION_FOLDER + "/graph0"
 
 lineColors=["blue","orange","red","green","#34084D","#00539B","#183b0b","#23585e"];
 
 MAX_DEPENDANCY = 100
 COMMON_NAME = "so many"
 
-GRAPH_TYPE = 2
 ''' Kiểu xuất đồ thị '''
 
 def spliit(ss):
@@ -346,11 +345,11 @@ def RegisterAndRenderNode(dot, courseId, style : NodeStyle):
     #-------------------------------------------------------------
     if style == NodeStyle.And:
         if not isDuplicate:
-            dot.node(graphNodeId, label="và")
+            dot.node(graphNodeId, label="và", URL=BASE_URL + "?type=svg&id=" + graphNodeId)
         ScannedNodes.append(graphNodeId)
     elif style == NodeStyle.Or:
         if not isDuplicate:
-            dot.node(graphNodeId, label="hoặc")
+            dot.node(graphNodeId, label="hoặc", URL=BASE_URL + "?type=svg&id=" + graphNodeId)
         ScannedNodes.append(graphNodeId)
     else:
         try: 
@@ -360,7 +359,8 @@ def RegisterAndRenderNode(dot, courseId, style : NodeStyle):
             name=myCourse['Tên học phần'],
             condition = myCourse['Học phần điều kiện'],
             credit=myCourse['Thời lượng'] + " / " + str(myCourse['TC học phí']) + "đ / " + str(myCourse['Trọng số'])  ,
-            ) + "}")       
+            ) + "}",
+            URL=BASE_URL + "?type=svg&id=" + graphNodeId)       
             ScannedNodes.append(graphNodeId)   
         except:
             # Ghi nhận lỗi với node có tên là "so many"
@@ -411,12 +411,12 @@ courseIndex = 0
 for myCourse in standardizedCourses:
     courseIndex  = courseIndex + 1;
     
-    if not ((myCourse['X'] == 'CH3225') or (myCourse['X'] == 'BF3010')
-            or (myCourse['X'] == 'BF4321') or (myCourse['X']=='CH4714')
-            or (myCourse['X'] == 'CH3306') or (myCourse['X']=='EV3121')
-            or (myCourse['X'] == 'EV4113') or (myCourse['X']=='IT4653')
-            or (myCourse['X'] == 'CH5700') or (myCourse['X']=='EE3510')) :
-        continue        
+    #if not ((myCourse['X'] == 'CH3225') or (myCourse['X'] == 'BF3010')
+    #        or (myCourse['X'] == 'BF4321') or (myCourse['X']=='CH4714')
+    #        or (myCourse['X'] == 'CH3306') or (myCourse['X']=='EV3121')
+    #        or (myCourse['X'] == 'EV4113') or (myCourse['X']=='IT4653')
+    #        or (myCourse['X'] == 'CH5700') or (myCourse['X']=='EE3510')) :
+    #    continue        
     #if courseIndex < 2520: 
     #    continue
     #if (myCourse['X'] != 'CH3630'):
@@ -452,6 +452,7 @@ for myCourse in standardizedCourses:
     try:
         # format='svg'
         dot.render(OUTPUT_FOLDER + '/' + myCourse['X'], view=False,format='png')
+        dot.render(OUTPUT_FOLDER + '/' + myCourse['X'], view=False,format='svg')
     except:
         print("     error to export to file with {0}".format(myCourse['X']))
         pass    

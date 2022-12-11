@@ -20,6 +20,9 @@ app.get("/",(req,res,next)=>{
               "API: http://&lt;domain&gt;:&lt;port&gt;/course?id=...<br/>" +
               "API: http://&lt;domain&gt;:&lt;port&gt;/course?id=...&type=json<br/>" +
               "API: http://&lt;domain&gt;:&lt;port&gt;/course?id=...&type=png&graph=1<br/>" +
+              "Parameters:<br/>" +
+              " - type = svg | json | png | graphviz <br/>" +
+              " - graph = 0 | 1 <br/>" +
               "Symbols:" +
               " - blue node: prerequisite<br/>"+
               " - pink node: dependant course<br/>"+
@@ -44,7 +47,7 @@ app.get("/course",(req,res,next)=>{
     }
     console.log(type)
     if (type == undefined) {
-        type = "png";
+        type = "svg";
     } else {
         type = type.toLowerCase(); // Kiểu kết quả trả về
     }
@@ -58,19 +61,28 @@ app.get("/course",(req,res,next)=>{
         case "2": folder = "graph2"; break;
     }
 
-    var imagePath = path.resolve(__dirname + `/${COURSE_COLLECTION_FOLDER}/${folder}/${courseID}.png`)
+    var imagePath = path.resolve(__dirname + `/${COURSE_COLLECTION_FOLDER}/${folder}/${courseID}`)
     console.log(imagePath);
 
     switch (type) {
         case 'json':  { // Chuyển đổi ảnh thành base64
-                        var imageAsBase64 = fs.readFileSync(imagePath, 'base64');
+                        var imageAsBase64 = fs.readFileSync(imagePath + "." + type, 'base64');
                         res.json({ result: "data:image/png;base64," + imageAsBase64 });
                         break;
                       } 
         case 'png':   { // Gửi file ảnh có sẵn
-                        res.sendFile(imagePath);
+                        res.sendFile(imagePath + "." + type);
                         break;
                       };  
+        case 'svg':   { // Gửi file ảnh có sẵn
+                        res.sendFile(imagePath + "." + type);
+                        break;
+                      };    
+        case 'graphviz': { // Gửi file ảnh có sẵn
+                        //res.setHeader()
+                        res.send(fs.readFileSync(imagePath).toString())
+                        break;
+                      };                                            
         default: res.json({error:"type is invalid.", 'message':'the ' + type + ' type is not supported. It must be png or json (default).'}); return;
       }
 });
