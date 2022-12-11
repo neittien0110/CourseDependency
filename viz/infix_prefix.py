@@ -97,14 +97,14 @@ class ExpressionConverter:
         else:
             # Trả về dạng hậu tố
             return prefix
-
+        
     def infixtodict (self,expression):
         """_summary_
             Chuyển đổi biểu thức trung tố thành cấu trúc python dictionary
         Args:
             expression (string): biểu thức trung tố. Ví dụ (IT1000/IT1001),(CH1000/CH1001),(BB1000/BB1001)
         Returns:
-            dict: thể hiển biểu thức. {"operator":"/","operands":[]}. Ví dụ {'operator': ',', 'operands': [{'operator': ',', 'operands': [{'operator': '/', 'operands': ['IT1000', 'IT1001']}, {'operator': '/', 'operands': ['CH1000', 'CH1001']}]}, {'operator': '/', 'operands': ['BB1000', 'BB1001']}]}
+            dict: thể hiển biểu thức. {"operator":"/","operands":[]}. Ví dụ {'operator': ',', 'operands': [{'operator': '/', 'operands': ['IT1000', 'IT1001']}, {'operator': '/', 'operands': ['CH1000', 'CH1001']}, {'operator': '/', 'operands': ['BB1000', 'BB1001']}]}
         """
         #return {"operator":"/","operand":["CH1123",{"operator":",","operand":["ABC","CDE"]}]}
         expr = self.reverse(expression)
@@ -121,23 +121,49 @@ class ExpressionConverter:
                 # Đưa ngoặc vào ngăn xếp
                 self.push(ch)
             elif ch == ')':
+                pre_o = ""
                 o=self.pop()
                 while o!='(':
-                    littlejson = {"operator":o,"operands":[operands.pop(),operands.pop()]}
-                    operands.append(littlejson)                    
+                    #Sử dụng ghép một loạt phép toán hạng của các toán tử giống nhau
+                    if pre_o != o:
+                        # Nếu 2 toán hạng liên tiếp khác nhau thì cứ tạo biểu thức 2 toán hạng
+                        littlejson = {"operator":o,"operands":[operands.pop(),operands.pop()]}
+                        operands.append(littlejson)
+                    else:
+                        #Lấy toán hạng phức hợp trước ra khỏi hàng đợi
+                        prejson = operands.pop()
+                        #Mở rộng toán hạng phức hợp với toán hạng trước đó
+                        prejson["operands"].append(operands.pop())
+                        #Và đẩy trở lại vào danh sách toán hạng
+                        operands.append(prejson)
+                    pre_o = o;                        
                     o=self.pop()
-
             elif(ch in self.precedence):  # tất nhiên đã loại 2 dấu ngoặc ra rồi
                 while(len(self.items)and self.precedence[ch] < self.precedence[self.seek()]):
                     self.pop()
                 self.push(ch)
             index = index + 1
         #end of while
+        
+        pre_o = ""
         while len(self.items):
             if(self.seek()=='('):
                 self.pop()
             else:
-                o=self.pop()
-                littlejson = {"operator":o,"operands":[operands.pop(),operands.pop()]}
-                operands.append(littlejson)                                    
+                #Sử dụng ghép một loạt phép toán hạng của các toán tử giống nhau
+                o=self.pop()           
+                if pre_o != o:
+                    # Nếu 2 toán hạng liên tiếp khác nhau thì cứ tạo biểu thức 2 toán hạng
+                    littlejson = {"operator":o,"operands":[operands.pop(),operands.pop()]}
+                    operands.append(littlejson)
+                else:
+                    #Lấy toán hạng phức hợp trước ra khỏi hàng đợi
+                    prejson = operands.pop()
+                    #Mở rộng toán hạng phức hợp với toán hạng trước đó
+                    prejson["operands"].append(operands.pop())
+                    #Và đẩy trở lại vào danh sách toán hạng
+                    operands.append(prejson)
+                pre_o = o;
         return operands.pop()
+    
+

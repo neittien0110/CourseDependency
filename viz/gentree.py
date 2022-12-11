@@ -33,7 +33,7 @@ COURSE_COLLECTION_FOLDER = "assets"
 #Thư mục chứa file đâu ra
 OUTPUT_FOLDER = COURSE_COLLECTION_FOLDER + "/graph2"
 
-lineColors=["blue","orange","red","green","pink","#34084D","#00539B","#183b0b","#93585e"];
+lineColors=["blue","orange","red","green","#34084D","#00539B","#183b0b","#23585e"];
 
 MAX_DEPENDANCY = 100
 COMMON_NAME = "so many"
@@ -117,6 +117,14 @@ def Operator2NodeStyle(operator):
     elif operator == "/":
         return NodeStyle.Or
 
+def Operator2EdgeStyle(operator):
+    if operator == ",":
+        return "solid"
+    elif operator == "/":
+        return "dotted"
+    else:
+        return "solid"
+
 #----------------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------------
 def findDependant(HP, dot, setHP):
@@ -165,22 +173,40 @@ def findDependant(HP, dot, setHP):
         parent_queue = []
         parent_queue.append(victim)
         parent_queue.append(dependentTopo)
+
+        #Là học phần liên trước học phần đang xử lý.
+        #Mục đích: Do bản chất toán tử chỉ có 2 toán hạng, làm cây học phần trở thành cây nhị
+        #phân, rất dài. 
+        #Giải pháp ghép toán hạng của các toán tử liên tiếp giống nhau. Ví dụ 2+3+4 thành +234
+        #Biến grandparent sẽ lưu toán tử trước đó, để xem toán hạng hiện thời có giống không 
+        #và sẽ ghép toán hạng của toán tử hiện tại vào grandparent.
+        grandparent = ""
         
         while (len(parent_queue)>0):       
             childrenTopo = parent_queue.pop()
             parent = parent_queue.pop()
+            operator = ""
             #Nếu có toán tử, thì ngay lập tức tạo node trung gian
             if (childrenTopo.__contains__("operator")):
+                operator = childrenTopo['operator']
                 # Tạo node trung chuyển 
-                switch_name = RegisterAndRenderNode(dot, str(childrenTopo).__hash__(), Operator2NodeStyle(childrenTopo['operator']))
+                switch_name, isDuplicate = RegisterAndRenderNode(dot, 
+                      str(childrenTopo).__hash__(), Operator2NodeStyle(operator))
                 # Lựa chọn 1 màu để tô cho các cạnh
                 edge_color = random.choice(lineColors)
                 # Tạo 1 cạnh liền duy nhất, nối trực tiếp giữa học phần đang xử lý và điểm trung chuyển
                 dot.edge(parent, switch_name, style="solid", color=edge_color )
                 # chuyển parent thành điểm trung gian toán tư luôn
                 parent = switch_name
+                # Nếu node trung gian đã được vẽ rồi, thì do bản chất của đặt tên bằng hash, chứng tỏ 
+                # rằng các node con cũng giống hệt, nên không cần vẽ nữa để tránh tạo nhiều mũi tên
+                if isDuplicate:
+                    continue
                 
-            #Kết nối với các toán hạng đang có
+            #Kết nối với các toán hạng đang có với 3 trường hợp:
+            #   {"operands":[{},{}]}
+            #   "IT1110"
+            #   ["IT1110", "IT3030"] ????????
             if (childrenTopo.__contains__("operands")):
                 children = childrenTopo["operands"]
             elif type(childrenTopo) == str:
@@ -196,7 +222,7 @@ def findDependant(HP, dot, setHP):
                     # Tạo node phụ thuộc
                     RegisterAndRenderNode(dot, operand, NodeStyle.Dependency)
                     # Và tạo 1 cạnh liền duy nhất, nối trực tiếp giữa học phần đang xử lý và học phần phụ thuộc duy nhất
-                    dot.edge(parent, operand, style="solid", color=random.choice(lineColors))                    
+                    dot.edge(parent, operand, style=Operator2EdgeStyle(operator), color=random.choice(lineColors))                    
                     dependant_queue.append(operand);                    
         # Hết lệnh if
     # Kết thúc vòng lặp duyệt tất cả các phần tử dependant_queue
@@ -287,8 +313,8 @@ def RegisterAndRenderNode(dot, courseId, style : NodeStyle):
         Vẽ thông tin node lên đồ thị 
     Args:
         dot (Graphviz):   Đối tượng quản lý đồ thị Graphviz. Do tính đệ qui của đồ thị nên dot có thể là một vùng con.
-        courseId (string): Mã học phần. Ví dụ IT1110.
-        style (NodeStyle): kiểu hiển thị. Đối với kiểu And, Or thì courseId sẽ dặt lại thành courseId_And, courseId_Or
+        courseId (string): Mã học phần, duy nhất. Ví dụ IT1110, hoặc hash(học phần điều kiện)
+        style (NodeStyle): kiểu hiển thị. 
     """   
         
     if (style == NodeStyle.CallerCluster or style == NodeStyle.DependencyCluster):
@@ -296,9 +322,12 @@ def RegisterAndRenderNode(dot, courseId, style : NodeStyle):
     else:
         myCourse = FindFullCourse(courseId)
         
-    graphNodeId = courseId
+    graphNodeId = str(courseId)
     '''Tên định danh của node trong cấu trúc đồ thị Graphviz'''
     
+    #Cờ báo hiệu node đã từng tồn tại
+    isDuplicate = (graphNodeId in ScannedNodes)
+        
     # Trường hợp là node của học phần gốc cần tính toán
     if (style == NodeStyle.Root):
         dot.attr('node', shape='record', color='red:orange', style='filled', gradientangle='270', fontcolor='white', fontsize="18", fontname="Tahoma")
@@ -316,13 +345,11 @@ def RegisterAndRenderNode(dot, courseId, style : NodeStyle):
         pass
     #-------------------------------------------------------------
     if style == NodeStyle.And:
-        graphNodeId = str(courseId) + "_And"
-        if not graphNodeId in ScannedNodes:
+        if not isDuplicate:
             dot.node(graphNodeId, label="và")
         ScannedNodes.append(graphNodeId)
     elif style == NodeStyle.Or:
-        graphNodeId = str(courseId) + "_Or"
-        if not graphNodeId in ScannedNodes:
+        if not isDuplicate:
             dot.node(graphNodeId, label="hoặc")
         ScannedNodes.append(graphNodeId)
     else:
@@ -338,7 +365,7 @@ def RegisterAndRenderNode(dot, courseId, style : NodeStyle):
         except:
             # Ghi nhận lỗi với node có tên là "so many"
             print ("Không vẽ được với " + str(courseId))                    
-    return graphNodeId
+    return graphNodeId, isDuplicate
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Main program
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -374,6 +401,10 @@ for myCourse in reader:
     standardizedCourses.append(myCourse)
 #print(standardizedCourses[12]['HP']);
 
+#EC = ExpressionConverter()
+#print (EC.infixtodict("IT1000/CH1000/CH1001"))
+#print (EC.infixtodict("(IT1000/IT1001),(CH1000/CH1001),(BB1000/BB1001)"))
+#exit(0)
 
 setHP = set()
 courseIndex = 0
