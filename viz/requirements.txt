@@ -5,3 +5,4 @@ webdriver
 selenium
 graphviz
 regex
+argparse

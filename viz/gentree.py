@@ -20,7 +20,9 @@ from numpy import NAN
 import pandas as pd
 import graphviz
 import os
-import json
+import graphviz
+import csv
+import argparse                     # module phân tích tham số dòng lệnh. Ví dụ. python ./gentree.py -s IT1110
 from infix_prefix import ExpressionConverter  
 ''' Hàm chuyển đổi biểu thức trung tố --> hậu tố'''
 
@@ -29,11 +31,20 @@ from infix_prefix import ExpressionConverter
 BASE_URL = 'http://sinno.soict.ai:37080/course'   
 
 #Thư mục chứa file đâu vào
-COURSE_COLLECTION_FOLDER = "assets"
-#Thư mục chứa file đâu ra
-OUTPUT_FOLDER = COURSE_COLLECTION_FOLDER + "/graph0"
+COURSE_COLLECTION_FOLDER = "assets" 
+'''Thư mục chứa file đâu vào'''
 
+#Cơ sở dữ liệu của các học phần, được thu thập từ trang ctt-sis
+COURSE_LIST_FILE = 'CourseListdata.csv'
+'''Cơ sở dữ liệu của các học phần, được thu thập từ trang ctt-sis'''
+
+#Thư mục chứa file ảnh đầu ra
+OUTPUT_FOLDER = COURSE_COLLECTION_FOLDER + "/graph0"
+'''Thư mục chứa file ảnh đầu ra'''
+
+#Màu của các đường nối quan hệ giữa các học phần
 lineColors=["blue","orange","red","green","#34084D","#00539B","#183b0b","#23585e"];
+'''Màu của các đường nối quan hệ giữa các học phần. Nên bổ sung thêm các màu sẫm cho đa dạng.'''
 
 MAX_DEPENDANCY = 100
 COMMON_NAME = "so many"
@@ -338,25 +349,35 @@ def RegisterAndRenderNode(dot, courseId, style : NodeStyle):
             # Ghi nhận lỗi với node có tên là "so many"
             print ("Không vẽ được với " + str(courseId))                    
     return graphNodeId, isDuplicate
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Main program
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-import graphviz
 
-import csv
+# Khai báo thông tin phần mềm cho bộ phân tích tham số dòng lệnh
+cmd_parser = argparse.ArgumentParser(
+                    prog = 'Vẽ đồ thị quan hệ giữa các mã học phần',
+                    description = 'Vẽ và ghép đồ thị các học phần phụ thuộc và bị phụ thuộc vào một mã học phần, dựa trên nguồn dữ liệu trong file ' + COURSE_COLLECTION_FOLDER + '/' + COURSE_LIST_FILE + '. Thư mục ảnh đầu ra là ' + OUTPUT_FOLDER,
+                    epilog = 'Dữ liệu nguồn từ Đại học Bách khoa Hà Nội')
+'''Bộ phân tích tham số dòng lệnh'''
 
-  
+# Khai báo các tham số dòng lệnh
+#cmd_parser.add_argument('-h', nargs='+', help=cmd_parser.print_help())
+cmd_parser.add_argument('-s','--subject', dest="hocphan", type=str.upper, help='Vẽ đồ thị cho duy nhất học phần chỉ định. Nếu bỏ qua, mặc định sinh đồ thị cho tất cả các mã học phần trong nguồn dữ liệu ' + str(COURSE_LIST_FILE),)  # Luôn tự động uppercase chuỗi kí tự nhập vào
 
+# Phân tích tham số dòng lệnh hiện có
+cmd_params = cmd_parser.parse_args()  
+'''dict chứa các tham số dòng lệnh. Lấy tham số là cmd_params.thamso'''
 
 #Chuyển đổi đường dẫn tương đối thành tuyệt đối
 COURSE_COLLECTION_FOLDER = os.getcwd() + '/../' + COURSE_COLLECTION_FOLDER
 OUTPUT_FOLDER = os.getcwd() + '/../' +  OUTPUT_FOLDER
 
-csvfile = open(COURSE_COLLECTION_FOLDER + '/CourseListdata.csv', 'r',encoding="utf-8-sig")
+csvfile = open(COURSE_COLLECTION_FOLDER + '/' + COURSE_LIST_FILE, 'r',encoding="utf-8-sig")
 '''File dữ liệu đầu vào, kết quả của quá trình crawl dữ liệu trang sis'''
-#csvfile = open("E:\StProjects/2020-2021\BuiDucChe_CrawlVaVeCayPhuThuocHocPhan\sources/assets/CourseListdata.csv", 'r',encoding="utf-8")
 
 reader = csv.DictReader(csvfile)
+'''handler điều khiển đọc file csv'''
 
 standardizedCourses = []; 
 ''' Danh sách đầy đủ các course với thông tin đã được chuẩn hoá.'''
@@ -380,20 +401,14 @@ for myCourse in reader:
 
 setHP = set()
 courseIndex = 0
+print(cmd_params.hocphan)
 for myCourse in standardizedCourses:
     courseIndex  = courseIndex + 1;
-    
-    #if not ((myCourse['X'] == 'CH3225') or (myCourse['X'] == 'BF3010')
-    #        or (myCourse['X'] == 'BF4321') or (myCourse['X']=='CH4714')
-    #        or (myCourse['X'] == 'CH3306') or (myCourse['X']=='EV3121')
-    #        or (myCourse['X'] == 'EV4113') or (myCourse['X']=='IT4653')
-    #        or (myCourse['X'] == 'CH5700') or (myCourse['X']=='EE3510')) :
-    #    continue        
-    #if courseIndex < 2520: 
-    #    continue
-    #if (myCourse['X'] != 'EE210'):
-    #   continue        
-                    
+
+    #Nếu có chỉ định tham số dòng lệnh vẽ đồ thị cho 1 học phần nào đó, thì chỉ vẽ cho duy nhất 1 học phần
+    if (cmd_params.hocphan != None) and (myCourse['X'] != cmd_params.hocphan):
+       continue        
+                       
     setHP.clear();
     dot = graphviz.Digraph('G', 
                            node_attr={'shape': 'record',}, 
@@ -429,3 +444,7 @@ for myCourse in standardizedCourses:
         print("     error to export to file with {0}".format(myCourse['X']))
         pass    
     dot.clear()
+    
+    #Nếu có chỉ định tham số dòng lệnh vẽ đồ thị cho 1 học phần nào đó, thì vẽ xong là kết thúc luôn
+    if (cmd_params.hocphan != None) and (myCourse['X'] != cmd_params.hocphan):
+       break
