@@ -35,6 +35,9 @@ class ExpressionConverter:
             return False
         else:
             return True
+    def Has1Operand(self,op):
+        return ((op=="=") or (op=="!"));
+    
     def reverse(self,expr):
         rev=""
         index = 0
@@ -47,7 +50,7 @@ class ExpressionConverter:
             if self.is0perand(ch):
                 operand, length = self.GetOperand(expr, index)
                 rev=operand+rev
-                index = index + length
+                index = index + length              
             else:       
                 rev=ch+rev
                 index = index + 1
@@ -129,6 +132,12 @@ class ExpressionConverter:
                 operand, length = self.GetOperand(expr, index)
                 operands.append(operand)
                 index = index + length - 1 # sẽ +1 sau
+            elif self.Has1Operand(ch):
+                # 
+                operand, length = self.GetOperand(expr, index+1)
+                littlejson = {"operator":ch,"operands":[operand]}
+                operands.append(littlejson)               
+                index = index + length - 1 + 1 # sẽ +1 sau 
             elif ch == '(':
                 # Đưa ngoặc vào ngăn xếp
                 self.push(ch)

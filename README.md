@@ -9,12 +9,17 @@ A website and webapi show the dependency tree of courses, help students choose w
 - Step 1: crawling. It takes about 120 minutes.
 
 ```dos
-    python ./crawldata.py
+    cd viz
+    python ./crawl_personalsis.py
     Output:../assets/CourseListdata.csv and,
            ../assets/CourseListdataextend.csv
 ```
 
 - Step 2: generate dependency graphs
+
+```dos
+      python ./gentree.py
+```
 
 - Step 3: run web api
 

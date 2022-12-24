@@ -38,57 +38,6 @@ lineColors=["blue","orange","red","green","#34084D","#00539B","#183b0b","#23585e
 MAX_DEPENDANCY = 100
 COMMON_NAME = "so many"
 
-''' Kiểu xuất đồ thị '''
-
-def spliit(ss):
-    """_summary_
-        Chuẩn hóa cú pháp của phòng đào tạo thành cú pháp riêng.
-    Args:
-        ss (_type_): _description_
-    Returns:
-        _type_: _description_
-    """    
-    if ss.find("OR") != -1 or ss.find("AND") != -1:
-        ss = ss.replace("AND", ",").replace("OR", "/")
-    if ss.find("(") != -1:
-        subss = []
-        sps = ""
-        tick = 0;
-        seq = ""
-        check = False
-        for i in range(len(ss)):
-            if check == True:
-                if ss[i] == "," or ss[i] == "/":
-                    seq = seq + ss[i]
-                check = False
-            else:
-                if (tick == 1 and ss[i] == ")") or (tick == 0 and ss[i] == "("):
-                    if sps != "":
-                        subss.append(sps)
-                        check = True
-                    sps = sps + ss[i]
-                    sps = ""
-                else:
-                    if (tick == 0 and (ss[i] == "," or ss[i] == "/")):
-                        subss.append(sps)
-                        seq = seq + ss[i]
-                        sps = ""
-                    else:
-                        sps = sps + ss[i]
-            if ss[i] == "(": tick += 1
-            if ss[i] == ")": tick -= 1
-        if sps != "": subss.append(sps)
-        data = ""
-        seqposition = 0
-        for sub in subss:
-            subrp = sub.replace(",", "AND").replace("/", "OR")
-            data = data + subrp
-            if seqposition != len(seq): data = data + seq[seqposition]
-            seqposition = seqposition + 1
-        return data
-    else:
-        return ss
-
 def FindFullCourse(courseId):
     ''' Tìm cấu trúc chứa thông tin đầy đủ về một mã học phần nào đó'''
     global standardizedCourses; 
@@ -123,6 +72,14 @@ def Operator2EdgeStyle(operator):
         return "dotted"
     else:
         return "solid"
+
+def Operator2EdgeLabel(operator):
+    if operator == "=":
+        return "song hành"
+    elif operator == "!":
+        return "tiên quyết"
+    else:
+        return ""
 
 #----------------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------------
@@ -172,21 +129,13 @@ def findDependant(HP, dot, setHP):
         parent_queue = []
         parent_queue.append(victim)
         parent_queue.append(dependentTopo)
-
-        #Là học phần liên trước học phần đang xử lý.
-        #Mục đích: Do bản chất toán tử chỉ có 2 toán hạng, làm cây học phần trở thành cây nhị
-        #phân, rất dài. 
-        #Giải pháp ghép toán hạng của các toán tử liên tiếp giống nhau. Ví dụ 2+3+4 thành +234
-        #Biến grandparent sẽ lưu toán tử trước đó, để xem toán hạng hiện thời có giống không 
-        #và sẽ ghép toán hạng của toán tử hiện tại vào grandparent.
-        grandparent = ""
         
         while (len(parent_queue)>0):       
             childrenTopo = parent_queue.pop()
             parent = parent_queue.pop()
             operator = ""
-            #Nếu có toán tử, thì ngay lập tức tạo node trung gian
-            if (childrenTopo.__contains__("operator")):
+            #Nếu có toán tử 2 toán hạng, thì ngay lập tức tạo node trung gian
+            if (childrenTopo.__contains__("operator") and not EC.Has1Operand(childrenTopo["operator"])):
                 operator = childrenTopo['operator']
                 # Tạo node trung chuyển 
                 switch_name, isDuplicate = RegisterAndRenderNode(dot, 
@@ -194,7 +143,11 @@ def findDependant(HP, dot, setHP):
                 # Lựa chọn 1 màu để tô cho các cạnh
                 edge_color = random.choice(lineColors)
                 # Tạo 1 cạnh liền duy nhất, nối trực tiếp giữa học phần đang xử lý và điểm trung chuyển
-                dot.edge(parent, switch_name, style="solid", color=edge_color )
+                if HP == parent:
+                    width= "5.0"
+                else:
+                    width = "1.0"
+                dot.edge(parent, switch_name, style="solid", penwidth=width, color=edge_color, label="")
                 # chuyển parent thành điểm trung gian toán tư luôn
                 parent = switch_name
                 # Nếu node trung gian đã được vẽ rồi, thì do bản chất của đặt tên bằng hash, chứng tỏ 
@@ -206,23 +159,31 @@ def findDependant(HP, dot, setHP):
             #   {"operands":[{},{}]}
             #   "IT1110"
             #   ["IT1110", "IT3030"] ????????
-            if (childrenTopo.__contains__("operands")):
+            if (childrenTopo.__contains__("operands") and not EC.Has1Operand(childrenTopo["operator"])):
                 children = childrenTopo["operands"]
-            elif type(childrenTopo) == str:
+            elif type(childrenTopo) == str or (EC.Has1Operand(childrenTopo["operator"])):
+                # Áp dụng cho loại biểu thức điều kiện là "IT1110", hoặc "IT1110="
                 children = [childrenTopo]
             else:
                 children = childrenTopo
             for operand in children:
-                # Đăng kí ngay để quét tiếp            
                 if type(operand) == dict:
-                    parent_queue.append(parent);
-                    parent_queue.append(operand);
+                    # Đăng kí ngay để quét tiếp nếu là dạng 2 toán tử                    
+                    if not EC.Has1Operand(operand["operator"]):
+                        parent_queue.append(parent);
+                        parent_queue.append(operand);
+                    else:
+                        # Nếu là dạng 1 toán tử thì hiển thị luôn
+                        RegisterAndRenderNode(dot, operand["operands"][0], NodeStyle.Dependency)
+                        # Và tạo 1 cạnh liền duy nhất, nối trực tiếp giữa học phần đang xử lý và học phần phụ thuộc duy nhất
+                        dot.edge(parent, operand["operands"][0], style=Operator2EdgeStyle(operator), penwidth="1.0", color=random.choice(lineColors), label=Operator2EdgeLabel(operand['operator']))
+                        dependant_queue.append(operand["operands"][0]);                    
                 else:
-                    # Tạo node phụ thuộc
+                    # Nếu là dạng toán hạng nút lá, thì hiển thị ngay
                     RegisterAndRenderNode(dot, operand, NodeStyle.Dependency)
                     # Và tạo 1 cạnh liền duy nhất, nối trực tiếp giữa học phần đang xử lý và học phần phụ thuộc duy nhất
-                    dot.edge(parent, operand, style=Operator2EdgeStyle(operator), color=random.choice(lineColors))                    
-                    dependant_queue.append(operand);                    
+                    dot.edge(parent, operand, style=Operator2EdgeStyle(operator), penwidth="1.0", color=random.choice(lineColors))
+                    dependant_queue.append(operand);   
         # Hết lệnh if
     # Kết thúc vòng lặp duyệt tất cả các phần tử dependant_queue
     return
@@ -277,13 +238,24 @@ def findCaller(HP, dot, setHP):
             # Tạo node caller và..
             RegisterAndRenderNode(dot, Caller, NodeStyle.Caller)   
             
+            # Vẽ đậm nếu là liên kết trực tiếp với học phần hiện tại    
+            if HP == victim:
+                width= "5.0"
+            else:
+                width = "1.0"   
+                
             # .. và vẽ thêm cạnh nối vào đồ thị.
             # Vẽ nét đứt nếu bị lệ thuộc một phần (do điều kiện hoặc), và nét liền nếu lệ thuộc hoàn toàn (điều kiện and)
             if halfCaller:
-                dot.edge(Caller, victim, style="dotted")
-            else: 
-                dot.edge(Caller, victim)  
+                edge_style="dotted"
                 
+            else: 
+                edge_style="solid"
+            
+            # Vẽ cạnh
+            dot.edge(Caller, victim, style=edge_style, penwidth = width)
+            
+             
             
             # Mở rộng danh sách cần đệ qui 
             if (limited <= MAX_DEPENDANCY):
@@ -392,7 +364,7 @@ standardizedCourses = [];
 #Bố trí lại thông tin phụ thuộc
 for myCourse in reader:
     dk=str(myCourse['Học phần điều kiện']);
-    dependency=dk.replace("*", "").replace("=", "").replace(" ", "").replace("!", "")
+    dependency=dk.replace("*", "").replace(" ", "")
     
     myCourse['X']= myCourse['Mã học phần'] #Mã học phần chính, trùng lặp dữ liệu để tiện cho thuật toán tìm quan hệ
     myCourse['Y']= dependency       #Mã học phần điều kiện, trùng lặp dữ liệu để tiện cho thuật toán tìm quan hệ
@@ -419,7 +391,7 @@ for myCourse in standardizedCourses:
     #    continue        
     #if courseIndex < 2520: 
     #    continue
-    #if (myCourse['X'] != 'CH3630'):
+    #if (myCourse['X'] != 'EE210'):
     #   continue        
                     
     setHP.clear();
