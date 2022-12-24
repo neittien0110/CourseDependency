@@ -11,8 +11,27 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true,
+            "cwd":"${workspaceFolder}/viz"
+        },
+        {
+            "name": "Python: gentree.py 1 hp",
+            "type": "python",
+            "request": "launch",
+            "program": "gentree.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd":"${workspaceFolder}/viz",
+            "args": ["-s", "BF3050"]
+        },
+        {
+            "name": "Python: gentree.py Programme",
+            "type": "python",
+            "request": "launch",
+            "program": "gentree.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
             "cwd":"${workspaceFolder}/viz",
             "args": ["-n", "ict", "-p", "IT3100E,IT4785E,IT3070E,IT3080E,IT2030,IT3160E,IT4142E,IT3020E,IT2110,IT2120,IT3210,IT3220,IT4948,IT3420E,IT2140E,IT4110E,IT4172E,IT4593E,IT3312E,IT3230E,IT3170E,IT4082E,IT3292E,IT3290E,IT3283E,IT3280E,IT4015E,IT5023E,IT5024E,IT4549E,IT4062E,IT3323E,IT4409E,IT4542E,IT3191E,IT4441E,IT4210E,IT4735E,IT4651E,IT4125E"]
-        }
+        }        
     ]
 }

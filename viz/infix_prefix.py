@@ -86,6 +86,8 @@ class ExpressionConverter:
                     o=self.pop()
             elif(ch in self.precedence):  # tất nhiên đã loại 2 dấu ngoặc ra rồi
                 while(len(self.items)and self.precedence[ch] < self.precedence[self.seek()]):
+                    # Xác định mức độ ưu tiên của toán tử.
+                    # Nếu toán tử hiện thời ch có độ ưu tiên thấp hơn so với toán tử đang có ở đỉnh stack thì lấy ra
                     prefix+=self.pop()
                 self.push(ch)
             index = index + 1
@@ -103,12 +105,15 @@ class ExpressionConverter:
             return prefix
         
     def GetOperand(self,expression, start):
+        '''
+            Lấy ra tên trọn vẹn của 1 toán hạng, gồm toàn bộ các kí tự liên tiếp và không phải toán tử.
+        '''
         res = "";
         index = start;
-        while self.is0perand(expression[index]):
-            res = res + expression[index];
+        while self.is0perand(expression[index]):            # Nếu kí tự không phải là toán tử
+            res = res + expression[index];                  #    thì đó là thành phần của tên toán hạng  
             index = index + 1   
-            if index == len(expression):
+            if index == len(expression):                    #    cần kiểm tra thêm nếu là kí tự cuối cùng của chuỗi
                 index + 1
                 break
         return res, (index - start)
@@ -161,7 +166,13 @@ class ExpressionConverter:
                     o=self.pop()
             elif(ch in self.precedence):  # tất nhiên đã loại 2 dấu ngoặc ra rồi
                 while(len(self.items)and self.precedence[ch] < self.precedence[self.seek()]):
-                    self.pop()
+                    # Xác định mức độ ưu tiên của toán tử.
+                    # Nếu toán tử hiện thời ch có độ ưu tiên thấp hơn so với toán tử đang có ở đỉnh stack thì lấy ra
+                    o=self.pop()
+                    # Fixbug: quên ghép với toán hạng sau khi lấy toán tử ra khỏi stack
+                    littlejson = {"operator":o,"operands":[operands.pop(),operands.pop()]}
+                    operands.append(littlejson)
+                    # TODO: ?? Liệu chố này có gần ghép toán tử trùng nhau, hoặc là toán tử 1 toán hạng như đoạn code ngay bên trên không nhỉ?
                 self.push(ch)
             index = index + 1
         #end of while
