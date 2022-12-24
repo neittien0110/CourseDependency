@@ -49,6 +49,26 @@ lineColors=["blue","orange","red","green","#34084D","#00539B","#183b0b","#23585e
 MAX_DEPENDANCY = 100
 COMMON_NAME = "so many"
 
+#Danh sách các học phần thuộc một chương trình đào tạo nào đó, được nhập vào bởi tham số dòng lệnh -p
+Education_Programme_Courses=[]
+'''Danh sách các học phần thuộc một chương trình đào tạo nào đó, được nhập vào bởi tham số dòng lệnh -p'''
+# Tham số dòng lệnh: -p IT2030,IT4991,IT3020,IT3011,IT3180,IT3070,IT3080,IT3160,IT4015,IT3150,IT3930,IT3120,IT3940,IT4409,IT4785,IT4490,IT4501,IT4611,IT4441,IT3170,IT4930,IT3190,IT1110,IT2000,IT3030,IT3040,IT3090,IT3100,IT4653,IT4663,IT4613,IT4480,IT4350,IT4341,IT4931,IT4244,IT4863,IT4906,IT4788,IT4488
+#EDUCATION_PROGRAMME_NAME="CNKHMT"
+#EDUCATION_PROGRAMME_COURSES = ['IT2030','IT4991','IT3020','IT3011','IT3180','IT3070','IT3080','IT3160','IT4015','IT3150','IT3930','IT3120','IT3940','IT4409','IT4785','IT4490','IT4501','IT4611','IT4441','IT3170','IT4930','IT3190','IT1110','IT2000','IT3030','IT3040','IT3090','IT3100','IT4653','IT4663','IT4613','IT4480','IT4350','IT4341','IT4931','IT4244','IT4863','IT4906','IT4788','IT4488']
+
+# Tham số dòng lệnh: -p IT2030,IT4991,IT3420,IT3020,IT4172,IT4593,IT3011,IT3180,IT3070,IT3080,IT4015,IT3150,IT3120,IT4409,IT4785,IT4611,IT3170,IT4210,IT4735,IT4651,IT1110,IT2000,IT3030,IT3040,IT3090,IT3100,IT4060,IT3943,IT4931,IT4681,IT4263,IT4025,IT3931,IT4831,IT4489
+#EDUCATION_PROGRAMME_NAME="CNKTMT"
+#EDUCATION_PROGRAMME_COURSES =["IT2030","IT4991","IT3420","IT3020","IT4172","IT4593","IT3011","IT3180","IT3070","IT3080","IT4015","IT3150","IT3120","IT4409","IT4785","IT4611","IT3170","IT4210","IT4735","IT4651","IT1110","IT2000","IT3030","IT3040","IT3090","IT3100","IT4060","IT3943","IT4931","IT4681","IT4263","IT4025","IT3931","IT4831","IT4489"]
+
+# Tham số dòng lệnh: -p IT2030,IT4991,IT3020,IT4172,IT4593,IT3011,IT3180,IT3070,IT3080,IT3160,IT4015,IT3150,IT3930,IT3120,IT3940,IT4931,IT4490,IT3170,IT3190,IT4210,IT4735,IT1110,IT2000,IT3030,IT3040,IT3090,IT3100,IT4653,IT4663,IT4995
+#EDUCATION_PROGRAMME_NAME="TNKHMT"
+#EDUCATION_PROGRAMME_COURSES =["IT2030","IT4991","IT3020","IT4172","IT4593","IT3011","IT3180","IT3070","IT3080","IT3160","IT4015","IT3150","IT3930","IT3120","IT3940","IT4931","IT4490","IT3170","IT3190","IT4210","IT4735","IT1110","IT2000","IT3030","IT3040","IT3090","IT3100","IT4653","IT4663","IT4995"]
+
+#Tham số dòng lệnh: -p IT3100E,IT4785E,IT3070E,IT3080E,IT2030,IT3160E,IT4142E,IT3020E,IT2110,IT2120,IT3210,IT3220,IT4948,IT3420E,IT2140E,IT4110E,IT4172E,IT4593E,IT3312E,IT3230E,IT3170E,IT4082E,IT3292E,IT3290E,IT3283E,IT3280E,IT4015E,IT5023E,IT5024E,IT4549E,IT4062E,IT3323E,IT4409E,IT4542E,IT3191E,IT4441E,IT4210E,IT4735E,IT4651E,IT4125E
+EDUCATION_PROGRAMME_NAME="ICT"
+EDUCATION_PROGRAMME_COURSES =["IT3100E","IT4785E","IT3070E","IT3080E","IT2030","IT3160E","IT4142E","IT3020E","IT2110","IT2120","IT3210","IT3220","IT4948","IT3420E","IT2140E","IT4110E","IT4172E","IT4593E","IT3312E","IT3230E","IT3170E","IT4082E","IT3292E","IT3290E","IT3283E","IT3280E","IT4015E","IT5023E","IT5024E","IT4549E","IT4062E","IT3323E","IT4409E","IT4542E","IT3191E","IT4441E","IT4210E","IT4735E","IT4651E","IT4125E"]
+
+
 def FindFullCourse(courseId):
     ''' Tìm cấu trúc chứa thông tin đầy đủ về một mã học phần nào đó'''
     global standardizedCourses; 
@@ -350,6 +370,18 @@ def RegisterAndRenderNode(dot, courseId, style : NodeStyle):
             print ("Không vẽ được với " + str(courseId))                    
     return graphNodeId, isDuplicate
 
+def ExportDotToGraph(dot, filename):
+    """
+        Xuất dữ liệu trong cấu trúc dot Graphviz ra file
+    """    
+    try:
+        # format='svg'
+        dot.render(filename, view=False,format='png')
+        dot.render(filename, view=False,format='svg')
+    except:
+        print("     error to export to file with {0}".format(myCourse['X']))
+        pass    
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Main program
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -362,12 +394,21 @@ cmd_parser = argparse.ArgumentParser(
 '''Bộ phân tích tham số dòng lệnh'''
 
 # Khai báo các tham số dòng lệnh
-#cmd_parser.add_argument('-h', nargs='+', help=cmd_parser.print_help())
 cmd_parser.add_argument('-s','--subject', dest="hocphan", type=str.upper, help='Vẽ đồ thị cho duy nhất học phần chỉ định. Nếu bỏ qua, mặc định sinh đồ thị cho tất cả các mã học phần trong nguồn dữ liệu ' + str(COURSE_LIST_FILE),)  # Luôn tự động uppercase chuỗi kí tự nhập vào
+cmd_parser.add_argument('-p','--programme', dest="chuongtrinh", type=str.upper, help='Vẽ đồ thị cho 1 chương trình đào tạo, gồm nhiều mã học phần trên cùng 1 đồ thị. Danh sách học phần ở dạng CSV, không có kí tự trống. Phải có tham số -n kèm theo. Ví dụ -n programme_name -p it1110,it3030,it4251')  # Luôn tự động uppercase chuỗi kí tự nhập vào
+cmd_parser.add_argument('-n','--name', dest="tenchuongtrinh", type=str, help='Tên file xuất của chương trình đào tạo . Ví dụ -n sie -p it1110,it3030,it4251') 
 
 # Phân tích tham số dòng lệnh hiện có
 cmd_params = cmd_parser.parse_args()  
 '''dict chứa các tham số dòng lệnh. Lấy tham số là cmd_params.thamso'''
+
+# Kiểm tra luôn tham số về chương trình đào tạo nếu có
+if cmd_params.chuongtrinh != None:
+    Education_Programme_Courses = cmd_params.chuongtrinh.split(',')
+    print("Các học phần của chương trình đào tạo: ")
+    print(Education_Programme_Courses)
+
+
 
 #Chuyển đổi đường dẫn tương đối thành tuyệt đối
 COURSE_COLLECTION_FOLDER = os.getcwd() + '/../' + COURSE_COLLECTION_FOLDER
@@ -400,20 +441,24 @@ for myCourse in reader:
 #exit(0)
 
 setHP = set()
+setHP.clear();
 courseIndex = 0
-print(cmd_params.hocphan)
+
+dot = graphviz.Digraph('G', 
+                        node_attr={'shape': 'record',}, 
+                        edge_attr={'len': '2.0'}
+                        )
 for myCourse in standardizedCourses:
     courseIndex  = courseIndex + 1;
+
+    #Nếu có chỉ định tham số dòng lệnh vẽ đồ thị cho 1 chương trình đào tạo nào đó, thì chỉ vẽ cho duy nhất các học phần trong danh sách
+    if  (cmd_params.chuongtrinh != None) and (not myCourse['X'] in Education_Programme_Courses):
+        continue
 
     #Nếu có chỉ định tham số dòng lệnh vẽ đồ thị cho 1 học phần nào đó, thì chỉ vẽ cho duy nhất 1 học phần
     if (cmd_params.hocphan != None) and (myCourse['X'] != cmd_params.hocphan):
        continue        
-                       
-    setHP.clear();
-    dot = graphviz.Digraph('G', 
-                           node_attr={'shape': 'record',}, 
-                           edge_attr={'len': '2.0'}
-                           )
+             
     # Nén: các node cluster sẽ lồng vào nhau
     dot.attr(compound='true')
     
@@ -435,16 +480,17 @@ for myCourse in standardizedCourses:
     dot.edge_attr.update(arrowhead='inv', arrowsize='1',)
     findCaller(myCourse["X"], dot, setHP)
     
-    #Vẽ đồ thị
-    try:
-        # format='svg'
-        dot.render(OUTPUT_FOLDER + '/' + myCourse['X'], view=False,format='png')
-        dot.render(OUTPUT_FOLDER + '/' + myCourse['X'], view=False,format='svg')
-    except:
-        print("     error to export to file with {0}".format(myCourse['X']))
-        pass    
-    dot.clear()
+    if cmd_params.chuongtrinh == None:
+        #Vẽ đồ thị và làm mới đồ thị khi chỉ vẽ cây phụ thuộc cho 1 học phần.
+        ExportDotToGraph(dot, OUTPUT_FOLDER + '/' + myCourse['X'])
+        dot.clear()
+        setHP.clear()
     
     #Nếu có chỉ định tham số dòng lệnh vẽ đồ thị cho 1 học phần nào đó, thì vẽ xong là kết thúc luôn
     if (cmd_params.hocphan != None) and (myCourse['X'] != cmd_params.hocphan):
        break
+
+if cmd_params.chuongtrinh != None:
+    #Vẽ đồ thị cho toàn bộ chương trình đào tạo nếu có tham số dòng lệnh
+    ExportDotToGraph(dot, OUTPUT_FOLDER + '/' + cmd_params.tenchuongtrinh)
+    dot.clear()
