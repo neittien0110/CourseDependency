@@ -27,6 +27,29 @@ A website and webapi show the dependency tree of courses, help students choose w
       nodejs ./index.js
 ```
 
+## Other features
+
+- Generate the condition tree of a single subject
+
+```dos
+    python ./gentree.py -s subject
+    python ./gentree.py -s IT1110
+```
+
+- Generate the condition tree of a single subject and force a trial condition expression
+
+```dos
+    python ./gentree.py -s subject -c condition
+    python ./gentree.py -s IT3030 -c "(IT111/IT1120/IT1130),IT2000"
+```
+
+- Generate the condition tree of a group of subjects, like a education programme
+
+```dos
+    python ./gentree.py -n name -p subjectInCSV
+    python ./gentree.py -n IT1  -p  IT2030,IT4991,IT3420,IT3020
+```
+
 ## Structure of the Source Folder
 
 ```dos

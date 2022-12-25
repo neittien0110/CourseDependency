@@ -395,12 +395,22 @@ cmd_parser = argparse.ArgumentParser(
 
 # Khai báo các tham số dòng lệnh
 cmd_parser.add_argument('-s','--subject', dest="hocphan", type=str.upper, help='Vẽ đồ thị cho duy nhất học phần chỉ định. Nếu bỏ qua, mặc định sinh đồ thị cho tất cả các mã học phần trong nguồn dữ liệu ' + str(COURSE_LIST_FILE),)  # Luôn tự động uppercase chuỗi kí tự nhập vào
+cmd_parser.add_argument('-c','--condition', dest="dieukienthu", type=str.upper, help='Điều kiện học phần giả định. Nếu được chỉ định, sẽ thay thế cho học phần điều kiện trong cơ sở dữ liệu. Phải dùng với tham số -s kèm theo.',)  # Luôn tự động uppercase chuỗi kí tự nhập vào
+
 cmd_parser.add_argument('-p','--programme', dest="chuongtrinh", type=str.upper, help='Vẽ đồ thị cho 1 chương trình đào tạo, gồm nhiều mã học phần trên cùng 1 đồ thị. Danh sách học phần ở dạng CSV, không có kí tự trống. Phải có tham số -n kèm theo. Ví dụ -n programme_name -p it1110,it3030,it4251')  # Luôn tự động uppercase chuỗi kí tự nhập vào
 cmd_parser.add_argument('-n','--name', dest="tenchuongtrinh", type=str, help='Tên file xuất của chương trình đào tạo . Ví dụ -n sie -p it1110,it3030,it4251') 
 
 # Phân tích tham số dòng lệnh hiện có
 cmd_params = cmd_parser.parse_args()  
 '''dict chứa các tham số dòng lệnh. Lấy tham số là cmd_params.thamso'''
+
+# Kiểm tra quan hệ giữa các tham số dòng lệnh
+if (cmd_params.chuongtrinh != None and cmd_params.tenchuongtrinh == None) or (cmd_params.chuongtrinh == None and cmd_params.tenchuongtrinh != None):
+    print("Tham số -p và -n phải cùng xuất hiện.")
+    exit(-1)
+if (cmd_params.dieukienthu != None and cmd_params.hocphan == None):
+    print("Tham số -c phải xuất hiện cùng tham số -s.")
+    exit(-2)
 
 # Kiểm tra luôn tham số về chương trình đào tạo nếu có
 if cmd_params.chuongtrinh != None:
@@ -456,8 +466,12 @@ for myCourse in standardizedCourses:
         continue
 
     #Nếu có chỉ định tham số dòng lệnh vẽ đồ thị cho 1 học phần nào đó, thì chỉ vẽ cho duy nhất 1 học phần
-    if (cmd_params.hocphan != None) and (myCourse['X'] != cmd_params.hocphan):
-       continue        
+    if (cmd_params.hocphan != None):
+        if (myCourse['X'] != cmd_params.hocphan):
+            continue
+        if cmd_params.dieukienthu != None:
+            # Ép buộc điều kiện thử từ tham số dòng lệnh
+            myCourse['Y'] = cmd_params.dieukienthu  
              
     # Nén: các node cluster sẽ lồng vào nhau
     dot.attr(compound='true')
@@ -481,8 +495,13 @@ for myCourse in standardizedCourses:
     findCaller(myCourse["X"], dot, setHP)
     
     if cmd_params.chuongtrinh == None:
-        #Vẽ đồ thị và làm mới đồ thị khi chỉ vẽ cây phụ thuộc cho 1 học phần.
-        ExportDotToGraph(dot, OUTPUT_FOLDER + '/' + myCourse['X'])
+        #Vẽ đồ thị và làm mới đồ thị khi chỉ vẽ cây phụ thuộc cho 1 học phần riêng rẽ
+        if cmd_params.dieukienthu == None:
+            filename = OUTPUT_FOLDER + '/' + myCourse['X']
+        else:
+            filename = COURSE_COLLECTION_FOLDER + '/trial/' + myCourse['X'] + "."+ cmd_params.dieukienthu.replace("/","+").replace("\\","+")
+            print(filename)
+        ExportDotToGraph(dot, filename)
         dot.clear()
         setHP.clear()
     
