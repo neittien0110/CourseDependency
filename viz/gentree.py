@@ -114,14 +114,14 @@ def Operator2EdgeLabel(operator):
 
 #----------------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------------
-def findDependant(HP, dot, setHP):
+def findDependant(HP, dot, rootStyle):
     """_summary_
         Tìm kiếm các môn học bị phụ thuộc vào môn hiện thời.
         Thuật giải quét chiều rộng, không đệ qui.
     Args:
         HP (_type_): Mã học phần cần tìm. Ví dụ IT3030
         dot (_type_): handler điều khiển graphviz
-        setHP (set): tập hợp chứa các cạnh phụ thuộc
+        rootStyle (NodeStyle): nút gốc có chuỗi học phần điều kiện là giả định hay thật
     """    
 
 
@@ -132,7 +132,7 @@ def findDependant(HP, dot, setHP):
     
     # Đưa học phần đầu tiên vào danh sách cần tìm kiếm
     dependant_queue.append(HP)
-    RegisterAndRenderNode(dot, HP, NodeStyle.Root)
+    RegisterAndRenderNode(dot, HP, rootStyle)
 
     '''Phụ trách phân tích biểu thức phụ thuộc'''
     EC = ExpressionConverter(); '''Phụ trách phân tích biểu thức phụ thuộc'''
@@ -303,6 +303,7 @@ class NodeStyle(Enum):
     CallerCluster =2
     Dependency = -1
     DependencyCluster = -2
+    RootTrial = -3        #Biểu tượng cho thấy học phần điều kiện là giả định.
     And = 9000          #Mã 9xxx dành cho các node tượng trưng/node switch phân cạnh, không phải học phần
     Or =  9001
 
@@ -318,7 +319,6 @@ def RegisterAndRenderNode(dot, courseId, style : NodeStyle):
         courseId (string): Mã học phần, duy nhất. Ví dụ IT1110, hoặc hash(học phần điều kiện)
         style (NodeStyle): kiểu hiển thị. 
     """   
-        
     if (style == NodeStyle.CallerCluster or style == NodeStyle.DependencyCluster):
         myCourse = 0
     else:
@@ -329,42 +329,52 @@ def RegisterAndRenderNode(dot, courseId, style : NodeStyle):
     
     #Cờ báo hiệu node đã từng tồn tại
     isDuplicate = (graphNodeId in ScannedNodes)
-        
-    # Trường hợp là node của học phần gốc cần tính toán
+    print (str(style) + " " + graphNodeId)
     if (style == NodeStyle.Root):
+        # Trường hợp là node của học phần gốc cần tính toán        
         dot.attr('node', shape='record', color='red:orange', style='filled', gradientangle='270', fontcolor='white', fontsize="18", fontname="Tahoma")
-    # Trường hợp là node của học phần bị phụ thuộc vào học phần hiện tại
-    if (style == NodeStyle.Caller):
+    elif (style == NodeStyle.RootTrial):
+        # Trường hợp là node của học phần gốc cần tính toán        
+        dot.attr('node', shape='record', color='lightgray:gray', style='filled', gradientangle='0', fontcolor='black', fontsize="15", fontname="Tahoma")
+        pass
+    elif (style == NodeStyle.Caller):
+        # Trường hợp là node của học phần bị phụ thuộc vào học phần hiện tại        
         dot.attr('node', shape='record', color='#ff000042', style='filled', fontcolor='black', fontsize="14", fontname="Tahoma")
         pass
-    # Trường hợp là node của học phần điều kiện
-    if (style == NodeStyle.Dependency):
+    elif (style == NodeStyle.Dependency):
+        # Trường hợp là node của học phần điều kiện
         dot.attr('node', shape='record', color='lightblue', style='filled', fontcolor='black', fontsize="14", fontname="Tahoma")
         pass
-    # Trường hợp là node của học phần điều kiện
-    if (style == NodeStyle.And or style == NodeStyle.Or):
+    elif (style == NodeStyle.And or style == NodeStyle.Or):
+        # Trường hợp là node của học phần điều kiện
         dot.attr('node', shape='circle', color='gray', style='', fontcolor='darkgreen', fontsize="10", fontname="Tahoma")
         pass
     #-------------------------------------------------------------
     if style == NodeStyle.And:
         if not isDuplicate:
-            dot.node(graphNodeId, label="và", URL=BASE_URL + "?type=svg&id=" + graphNodeId)
+            dot.node(graphNodeId, label="và")
         ScannedNodes.append(graphNodeId)
     elif style == NodeStyle.Or:
         if not isDuplicate:
-            dot.node(graphNodeId, label="hoặc", URL=BASE_URL + "?type=svg&id=" + graphNodeId)
+            dot.node(graphNodeId, label="hoặc")
         ScannedNodes.append(graphNodeId)
     else:
+        TrialNote = ""
+        if (style == NodeStyle.RootTrial):
+            TrialNote = "Giả định: " + myCourse['Y'] + "| Hiện tại: "
+            pass
         try: 
             graphNodeId = myCourse['Mã học phần']
             dot.node(graphNodeId, label="{" + "{id} | {name}  | {condition} | {credit}".format(
             id = myCourse['Mã học phần'],
             name=myCourse['Tên học phần'],
-            condition = myCourse['Học phần điều kiện'],
+            condition = (str(TrialNote) + myCourse['Học phần điều kiện']) ,
             credit=myCourse['Thời lượng'] + " / " + str(myCourse['TC học phí']) + "đ / " + str(myCourse['Trọng số'])  ,
             ) + "}",
-            URL=BASE_URL + "?type=svg&id=" + graphNodeId)       
-            ScannedNodes.append(graphNodeId)   
+            # Bug:  nếu viết như bên dưới thì kí tự & sẽ được chuyển đổi encoding. Chưa tìm được hàm để nó đừng có encoding nua
+            #     dot.node(graphNodeId, label="và", URL=BASE_URL + '?type=svg&id=' + graphNodeId)                     
+            URL=BASE_URL + "?id=" + graphNodeId)       
+            ScannedNodes.append(graphNodeId)
         except:
             # Ghi nhận lỗi với node có tên là "so many"
             print ("Không vẽ được với " + str(courseId))                    
@@ -476,9 +486,11 @@ for myCourse in standardizedCourses:
     # Nén: các node cluster sẽ lồng vào nhau
     dot.attr(compound='true')
     
-    # Đưa nút gốc, mã học phần gốc vào, với màu sắc chỉ định
+    # Đưa nút gốc, mã học phần gốc vào, với màu sắc chỉ định. Riêng trường hợp thử nghiệm học phần điều kiện giả định thì phải vẽ khác một tí để phân biệt
     # Tham khảo: https://graphviz.org/doc/info/shapes.html
-    RegisterAndRenderNode(dot, myCourse['X'], style=NodeStyle.Root)   
+    # Bỏ qua vì việc vẽ nút gốc đã nằm trong hàm findDependant rồi
+    #RegisterAndRenderNode(dot, myCourse['X'], style=NodeStyle.Root)   
+                
 
     # Chuẩn hóa dữ liệu từ file csv
     print("Vẽ đồ thị: HP " + myCourse['X']+ " --dk--> " + myCourse['Y'])
@@ -487,7 +499,11 @@ for myCourse in standardizedCourses:
     dot.attr('node', shape='box', color='white', style='filled', fontcolor='black')     # Không hiểu sao phải thiết lập thuộc tính ở đây, nếu không thì node đại diện cho cluster sẽ kông đổi atrribute được
     dot.edge_attr.update(arrowhead='none', arrowsize='1')
     ScannedNodes.clear()
-    findDependant(myCourse["X"], dot, setHP)
+    if cmd_params.dieukienthu != None:
+        rootStyle = NodeStyle.RootTrial
+    else:
+        rootStyle = NodeStyle.Root    
+    findDependant(myCourse["X"], dot, rootStyle)
     
     # Lần theo dấu vết các cạnh là các học phần cần môn này
     #dot.attr('node', shape='box', color='#ff000042', style='filled', fontcolor='black')    

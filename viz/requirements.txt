@@ -6,3 +6,4 @@ selenium
 graphviz
 regex
 argparse
+enum
