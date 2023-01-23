@@ -77,15 +77,16 @@ app.get("/course",(req,res,next)=>{
 
     // Tạo ảnh dựa trên dữ liệu học phần phụ thuộc giả định
     if (condition !=undefined) {
-        condition = (String(condition)).replace(" ","").replace("\t","");
+        condition = (String(condition)).replaceAll(" ","").replaceAll("\t","");
         execSync("cd ../viz; python3 ./gentree.py -s " + courseID + " -c " + condition)
         console.log(`HP ${condition} với giả định phụ thuộc  ${condition}`)
     }
 
     var imagePath = path.resolve(__dirname + `/${COURSE_COLLECTION_FOLDER}/${folder}/${courseID}`)
     if (condition !=undefined) {
-        // Hiệu chỉnh tên file nếu có điều kiện học phần giả định
-        imagePath = imagePath + "." + condition
+        // Hiệu chỉnh tên file nếu có điều kiện học phần giả định.
+        // Đồng thời đổi kí tự đặc biệt vì không phù hợp với tên file
+        imagePath = imagePath + "." + condition.replaceAll("/","+")
     }
     console.log(imagePath);
 
