@@ -12,7 +12,12 @@ A website and webapi show the dependency tree of courses, help students choose w
 
 - install graphviz
 - add the **bin** folder of graphviz to the PATH environment.
+- modify 2 variables in file **./crawl_personalsis.py**. Input the studentid and its password to access SIS system.
 
+```python
+LOGIN_USERNAME = "2016baba"
+LOGIN_PASSWORD = "2016lala"
+```
 
 ## How to run
 
@@ -24,6 +29,8 @@ A website and webapi show the dependency tree of courses, help students choose w
     Output:../assets/CourseListdata.csv and,
            ../assets/CourseListdataextend.csv
 ```
+
+  Note: Must wait for a while, until an web browser open. This application will fill the username/password into the empty textbox. But you must **entry captcha by yourself**.
 
 - Step 2: generate dependency graphs
 
