@@ -4,17 +4,39 @@
 
 A website and webapi show the dependency tree of courses, help students choose which course need to be accomplished early and arrange their learning plan.
 
+## Prerequisite
+
+```dos
+  pip install -r requirements.txt
+```
+
+- install graphviz
+- add the **bin** folder of graphviz to the PATH environment.
+- modify 2 variables in file **./crawl_personalsis.py**. Input the studentid and its password to access SIS system.
+
+```python
+LOGIN_USERNAME = "2016baba"
+LOGIN_PASSWORD = "2016lala"
+```
+
 ## How to run
 
 - Step 1: crawling. It takes about 120 minutes.
 
 ```dos
-    python ./crawldata.py
+    cd viz
+    python ./crawl_personalsis.py
     Output:../assets/CourseListdata.csv and,
            ../assets/CourseListdataextend.csv
 ```
 
+  Note: Must wait for a while, until an web browser open. This application will fill the username/password into the empty textbox. But you must **entry captcha by yourself**.
+
 - Step 2: generate dependency graphs
+
+```dos
+      python ./gentree.py
+```
 
 - Step 3: run web api
 
@@ -22,7 +44,32 @@ A website and webapi show the dependency tree of courses, help students choose w
       nodejs ./index.js
 ```
 
+## Other features
+
+- Generate the condition tree of a single subject
+
+```dos
+    python ./gentree.py -s subject
+    python ./gentree.py -s IT1110
+```
+
+- Generate the condition tree of a single subject and force a trial condition expression
+
+```dos
+    python ./gentree.py -s subject -c condition
+    python ./gentree.py -s IT3030 -c "(IT111/IT1120/IT1130),IT2000"
+```
+
+- Generate the condition tree of a group of subjects, like a education programme
+
+```dos
+    python ./gentree.py -n name -p subjectInCSV
+    python ./gentree.py -n IT1  -p  IT2030,IT4991,IT3420,IT3020
+```
+
 ## Structure of the Source Folder
+
+GitHUB: <https://github.com/neittien0110/CourseDependency.git>
 
 ```dos
 |   Readme.docx
@@ -35,58 +82,39 @@ A website and webapi show the dependency tree of courses, help students choose w
 |   |   
 |               
 ├───assets
-|       CourseListdata - Copy.csv
-|       CourseListdata.csv
-|       
-├───dotsourcemoredetail
-|       HE3011
-|       HE3011.png
-|       IT3030
-|       IT3030.png
+|   |   CourseListdata.csv           (crawling results)
+|   |    
+|   ├───graph0
+|   |       HE3011
+|   |       HE3011.png
+|   |       IT3030
+|   |       IT3030.png
 |       
 ├───viz
-|   |   crawldata.py
-|   |   Digraph.gv
-|   |   Digraph.gv.png
+|   |   crawl_personalsis.py        (crawling program)
 |   |   example.dot
-|   |   gentree.py
-|   |   graphcoursemoredetail.py
+|   |   gentree.py                  (crawling results to graph) 
+|   |   graphcoursemoredetail.py    (not in used)
 |   |   requirements.txt
-|   |   try.py
 |   |   Untitled.ipynb
 |   |   
-|   ├───.idea
-|   |   |   .gitignore
-|   |   |   aws.xml
-|   |   |   misc.xml
-|   |   |   modules.xml
-|   |   |   viz.iml
-|   |   |   
-|   |   ÀÄÄÄinspectionProfiles
-|   |           profiles_settings.xml
-|   |           
-|   ├───.ipynb_checkpoints
-|   |       Untitled-checkpoint.ipynb
-|   |       
 |   ├───BrowserDrivers
 |   |       chromedriver.exe
 |   |       geckodriver.exe
 |   |       msedgedriver.exe
 |   |       
-|   ├───dotsourcemoredetail
-|   |       BF2010
-|   |       BF2010.png
-|   |       BF2410
-|   |       
-|   ├───templates
-|   |       course.html
-|   |       picture.html
-|   |       
-
 ```
 
 * Thư mục **api** chứa code web server 
 * Thư mục **viz** chứa code crawl data , dữ liệu được crawl và dữ liệu đã phân tích và render bằng graphviz
-* API test:
-* http://sinno.soict.ai:37080/course?id=ch4040 (http://sinno.soict.ai:37080/course?id={courseid})
-* http://sinno.soict.ai:37080/course?id=it3030 (http://sinno.soict.ai:37080/course?id={courseid}.png)
+
+## Demo
+
+- Xem ảnh vẽ mối quan hệ phụ thuộc của 1 học phần nào đó: **<span>http</span>://sinno.soict.ai:37080/course?id={courseid}**
+  - http://sinno.soict.ai:37080/course?id=ch4040 
+  - http://sinno.soict.ai:37080/course?id=it3030 
+- Xem mối quan hệ phụ thuộc của 1 học phần nào đó ở dạng json, phù hợp để tích hợp vào một GUI control trên website khác: **<span>http</span>://sinno.soict.ai:37080/course?id={courseid}&type=json**
+  - http://sinno.soict.ai:37080/course?id=it1110&type=json
+- Xem mối quan hệ phụ thuộc của 1 học phần nào đó ở các dạng đồ thị khác nhau: **<span>http</span>://sinno.soict.ai:37080/course?id={courseid}&graph={index}**
+  - http://sinno.soict.ai:37080/course?id=it3030&graph=0 
+  - http://sinno.soict.ai:37080/course?id=it3030&graph=1 

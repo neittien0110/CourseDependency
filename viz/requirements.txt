@@ -1,0 +1,9 @@
+html2text
+numpy
+pandas
+webdriver-manager
+selenium
+graphviz
+regex
+argparse
+enum34

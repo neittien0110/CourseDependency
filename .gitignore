@@ -2,3 +2,6 @@ api/node_modules
 assets
 logs/xvba_debug.log
 api/package-lock.json
+viz/__pycache__
+viz/logs/xvba_debug.log
+viz/node_modules
