@@ -1,5 +1,9 @@
 from numpy import NAN, mod
 from selenium import webdriver
+from selenium.webdriver.edge.service import Service as EdgeService
+from selenium.webdriver.chrome.service import Service as ChromiumService
+from webdriver_manager.firefox import GeckoDriverManager
+from webdriver_manager.microsoft import EdgeChromiumDriverManager
 from selenium.webdriver.chrome.options import Options
 from time import sleep
 from selenium.webdriver.common.by import By
@@ -11,11 +15,12 @@ import html2text
 import pandas as pd
 import os
 
+
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # create a url variable that is the website link that needs to crawl
 BASE_URL = 'https://ctt-sis.hust.edu.vn/pub/CourseLists.aspx'    #20167995
-LOGIN_USERNAME = "20167995"
-LOGIN_PASSWORD = "20167995"
+LOGIN_USERNAME = ""
+LOGIN_PASSWORD = ""
 
 #Thư mục chứa kết quả
 COURSE_COLLECTION_FOLDER = "../assets"
@@ -52,11 +57,14 @@ class Crawl():
 
 
         if WebBrowserSelector == 1:
-            browser = webdriver.Firefox()   # import browser firefox}    
+            #browser = webdriver.Firefox()   # import browser firefox}    
+            browser = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()))
         elif WebBrowserSelector == 2:   
-            browser = webdriver.Chrome(chrome_options=chrome_option, executable_path=r"./BrowserDrivers/chromedriver.exe")
+            # browser = webdriver.Chrome(chrome_options=chrome_option, executable_path=r"./BrowserDrivers/chromedriver.exe")
+            browser = webdriver.Chrome(service=ChromiumService(ChromeDriverManager(chrome_type=ChromeType.CHROMIUM).install()))
         elif WebBrowserSelector == 3:   
-            browser = webdriver.Edge(executable_path=r'./BrowserDrivers/msedgedriver.exe')   # import browser firefox}    
+            #browser = webdriver.Edge(executable_path=r'./BrowserDrivers/msedgedriver.exe')   # import browser firefox}    
+            browser = webdriver.Edge(service=EdgeService(EdgeChromiumDriverManager().install()))
         
         #Mo trang web
         browser.get(BASE_URL)

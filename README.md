@@ -4,6 +4,16 @@
 
 A website and webapi show the dependency tree of courses, help students choose which course need to be accomplished early and arrange their learning plan.
 
+## Prerequisite
+
+```dos
+  pip install -r requirements.txt
+```
+
+- install graphviz
+- add the **bin** folder of graphviz to the PATH environment.
+
+
 ## How to run
 
 - Step 1: crawling. It takes about 120 minutes.
@@ -51,6 +61,8 @@ A website and webapi show the dependency tree of courses, help students choose w
 ```
 
 ## Structure of the Source Folder
+
+GitHUB: <https://github.com/neittien0110/CourseDependency.git>
 
 ```dos
 |   Readme.docx

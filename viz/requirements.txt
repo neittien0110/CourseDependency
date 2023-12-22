@@ -1,9 +1,9 @@
 html2text
 numpy
 pandas
-webdriver
+webdriver-manager
 selenium
 graphviz
 regex
 argparse
-enum
+enum34
